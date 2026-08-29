@@ -1,0 +1,15 @@
+# Devin CLI local overrides
+.devin/config.local.json
+.devin/mcp_config.local.json
+
+# Secrets
+.env
+.env.*
+
+# Dependencies & build output
+node_modules/
+dist/
+build/
+
+# OS
+.DS_Store
