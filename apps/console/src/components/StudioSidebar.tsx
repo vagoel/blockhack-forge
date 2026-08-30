@@ -28,11 +28,9 @@ const NAV_ITEMS: Array<{
 export default function StudioSidebar({
   active,
   worker,
-  onLock,
 }: {
   active: ActiveView;
   worker: CompileWorkerStatus;
-  onLock: () => void;
 }) {
   const operatorKey = useOperatorKey();
   const apps = useQuery(api.apps.list, { operatorKey }) as RecentApp[] | undefined;
@@ -122,10 +120,6 @@ export default function StudioSidebar({
             </small>
           </span>
         </div>
-        <button className="sidebar-lock" type="button" onClick={onLock}>
-          <span aria-hidden="true">⌁</span>
-          Lock studio
-        </button>
       </div>
     </aside>
   );

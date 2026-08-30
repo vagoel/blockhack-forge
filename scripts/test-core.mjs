@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
+import { runInNewContext } from "node:vm";
 import { build } from "esbuild";
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
@@ -25,6 +26,13 @@ async function load(entry, name) {
 }
 
 try {
+  const { operatorMatches, requireOperator } = await load(
+    "convex/lib/operator.ts",
+    "operator",
+  );
+  assert.equal(operatorMatches(""), true);
+  assert.doesNotThrow(() => requireOperator(""));
+
   const {
     devinModeLabel,
     devinModeRequestFields,
@@ -65,10 +73,56 @@ try {
   }
   assert.deepEqual(devinModeRequestFields("v3", "default"), {});
 
+  const sourcePolicySource = readFileSync(
+    path.join(root, "apps/console/src/sourcePolicy.ts"),
+    "utf8",
+  );
+  assert.doesNotMatch(
+    sourcePolicySource,
+    /\b(?:createProgram|getTypeChecker)\s*\(/,
+    "source policy must not depend on semantic symbol binding in production browser bundles",
+  );
   const { validateGeneratedSource } = await load(
     "apps/console/src/sourcePolicy.ts",
     "source-policy",
   );
+  const { COMPILER_SHIMS } = await load(
+    "apps/console/src/compilerShims.ts",
+    "compiler-shims",
+  );
+  const compatibilitySource = `
+    import { Runtime } from "@runtime/sdk";
+    export default function App() { return Runtime.useTheme().primary; }
+  `;
+  const compatibilityBundle = await build({
+    stdin: { contents: compatibilitySource, loader: "tsx", resolveDir: "/" },
+    bundle: true,
+    write: false,
+    format: "iife",
+    globalName: "GeneratedApp",
+    logLevel: "silent",
+    plugins: [{
+      name: "runtime-shim-test",
+      setup(esbuild) {
+        esbuild.onResolve(
+          { filter: /^(react|react-dom|react\/jsx-runtime|@runtime\/sdk|@runtime\/ui)$/ },
+          (args) => ({ path: args.path, namespace: "shim" }),
+        );
+        esbuild.onLoad({ filter: /.*/, namespace: "shim" }, (args) => ({
+          contents: COMPILER_SHIMS[args.path] ?? "module.exports = {};",
+          loader: "js",
+        }));
+      },
+    }],
+  });
+  const compatibilityContext = {
+    window: { Runtime: { useTheme: () => ({ primary: "#123456" }) } },
+  };
+  runInNewContext(
+    `${compatibilityBundle.outputFiles[0].text}\nwindow.GeneratedApp = GeneratedApp;`,
+    compatibilityContext,
+  );
+  assert.equal(compatibilityContext.window.GeneratedApp.default(), "#123456");
   assert.doesNotThrow(() =>
     validateGeneratedSource(`
       import { useState, useRef } from "react";
@@ -102,6 +156,25 @@ try {
         return <button onClick={() => panel.close()}>{panel.open ? "Close" : "Open"}</button>;
       }
     `),
+  );
+  assert.doesNotThrow(() =>
+    validateGeneratedSource(`
+      export default function App() {
+        const active = 0;
+        return <div>{[1].map((item, index) => {
+          const open = active === index;
+          return <button onClick={() => open ? null : index}>{open ? item : "Closed"}</button>;
+        })}</div>;
+      }
+    `),
+  );
+  assert.throws(
+    () =>
+      validateGeneratedSource(`
+        function helper() { const open = () => null; return open; }
+        export default function App() { open("https://bad.test"); return null; }
+      `),
+    /open is not available/,
   );
   assert.throws(
     () => validateGeneratedSource(`export default function App(){ open("https://bad.test"); return null; }`),
@@ -166,6 +239,20 @@ try {
         ["vercel"],
       ),
     /useRt requires the Convex connector/,
+  );
+  assert.doesNotThrow(() =>
+    validateGeneratedSource(
+      `import { Runtime } from "@runtime/sdk"; export default function App(){ const theme=Runtime.useTheme(); return <div>{theme.primary}</div>; }`,
+      ["vercel"],
+    ),
+  );
+  assert.throws(
+    () =>
+      validateGeneratedSource(
+        `import { Runtime } from "@runtime/sdk"; export default function App(){ const people=Runtime.usePresence(); return <div>{people.length}</div>; }`,
+        ["vercel"],
+      ),
+    /usePresence requires the Convex connector/,
   );
   assert.throws(
     () =>

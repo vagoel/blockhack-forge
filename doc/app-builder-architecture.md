@@ -61,7 +61,7 @@ Either way, all live interaction (scores, votes, presence, timers) flows through
 
 ## Safety in one paragraph
 
-Generated code runs in a locked sandbox: it can only use our approved building blocks (the runtime SDK and UI kit), it runs inside a restricted iframe, and anything sensitive (Devin, OpenAI, Vercel, Context.dev keys) lives only in the backend. The operator key gates everything that costs money; the audience never needs an account.
+Generated code runs in a locked sandbox: it can only use our approved building blocks (the runtime SDK and UI kit), it runs inside a restricted iframe, and anything sensitive (Devin, OpenAI, Vercel, Context.dev keys) lives only in the backend. The builder console is public and the audience never needs an account.
 
 ---
 

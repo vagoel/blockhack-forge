@@ -13,16 +13,26 @@ import type { RuntimeInit, Theme } from "./index";
 declare global {
   interface Window {
     React: typeof React;
-    Runtime: typeof Runtime;
-    RuntimeUI: typeof RuntimeUI;
+    Runtime: typeof Runtime & { Runtime: typeof Runtime };
+    RuntimeUI: typeof RuntimeUI & { RuntimeUI: typeof RuntimeUI };
     GeneratedApp?: unknown;
     __RT_BOOT__: () => void;
   }
 }
 
 window.React = React;
-window.Runtime = Object.freeze(Runtime);
-window.RuntimeUI = Object.freeze(RuntimeUI);
+
+// Keep the documented namespace API while tolerating generated bundles that
+// used the equivalent-looking named namespace imports (`{ Runtime }` or
+// `{ RuntimeUI }`). This runtime-side alias also repairs already-compiled
+// bundles when the shell runtime is upgraded.
+const runtimeGlobal = { ...Runtime } as typeof Runtime & { Runtime: typeof Runtime };
+runtimeGlobal.Runtime = runtimeGlobal;
+window.Runtime = Object.freeze(runtimeGlobal);
+
+const runtimeUiGlobal = { ...RuntimeUI } as typeof RuntimeUI & { RuntimeUI: typeof RuntimeUI };
+runtimeUiGlobal.RuntimeUI = runtimeUiGlobal;
+window.RuntimeUI = Object.freeze(runtimeUiGlobal);
 
 function applyThemeVars(theme: Theme | null | undefined) {
   const r = document.documentElement.style;

@@ -6,23 +6,12 @@ cd "$(dirname "$0")/.."
 
 set -a; source .env; set +a
 DEPLOYMENT="outgoing-warbler-572"
-OPERATOR_KEY_FILE=".operator-key"
 
 # Accept Devin's documentation-style name and the existing DEVIN_v3 local
 # name, while keeping DEVIN as the canonical variable used by the app.
 DEVIN_KEY="${DEVIN:-${DEVIN_API_KEY:-${DEVIN_v3:-${DEVIN_V3:-}}}}"
 DEVIN="$DEVIN_KEY"
 export DEVIN
-
-if [ ! -s "$OPERATOR_KEY_FILE" ]; then
-  umask 077
-  node -e 'require("node:fs").writeFileSync(process.argv[1], require("node:crypto").randomBytes(32).toString("base64url") + "\n", { mode: 0o600 })' "$OPERATOR_KEY_FILE"
-fi
-OPERATOR_KEY=$(tr -d '\r\n' < "$OPERATOR_KEY_FILE")
-if [ "${#OPERATOR_KEY}" -lt 32 ]; then
-  echo "operator key is invalid; replace $OPERATOR_KEY_FILE" >&2
-  exit 1
-fi
 
 CONTEXT_KEY="${CONTEXT_DEV_API_KEY:-${CONTEXT:-}}"
 VERCEL_KEY="${VERCEL_TOKEN:-${VERCEL:-}}"
@@ -85,7 +74,6 @@ node scripts/build-vendor.mjs
 node scripts/sync-playbook.mjs
 CONVEX_DEPLOY_KEY="$KEY" npx convex deploy -y
 set_convex_env DEVIN "$DEVIN"
-set_convex_env OPERATOR_KEY "$OPERATOR_KEY"
 set_convex_env VERCEL_TOKEN "$VERCEL_KEY"
 set_convex_env APP_CONVEX_URL "https://$DEPLOYMENT.convex.cloud"
 
@@ -100,10 +88,10 @@ CONVEX_DEPLOY_KEY="$KEY" npx convex env remove CONTEXT
 CONVEX_DEPLOY_KEY="$KEY" npx convex env remove OPENAI_KEY
 CONVEX_DEPLOY_KEY="$KEY" npx convex env remove VERCEL
 CONVEX_DEPLOY_KEY="$KEY" npx convex env remove CONVEX_CLOUD_URL
+CONVEX_DEPLOY_KEY="$KEY" npx convex env remove OPERATOR_KEY
 
 sync_optional_convex_env DEVIN_ORG_ID "${DEVIN_ORG_ID:-}"
 set_convex_env DEVIN_MAX_ACU_LIMIT "${DEVIN_MAX_ACU_LIMIT:-2}"
 set_convex_env DEVIN_MAX_RETRIES "${DEVIN_MAX_RETRIES:-0}"
 set_convex_env DEVIN_PLAYBOOK_ID "$(cat scripts/.playbook-id)"
 echo "deployed to https://$DEPLOYMENT.convex.cloud"
-echo "private console key is stored in $OPERATOR_KEY_FILE"

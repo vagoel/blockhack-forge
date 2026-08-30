@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { operatorMatches } from "./lib/operator";
 
-/** Used only by the console unlock form; performs no database writes. */
+/** Backwards-compatible public readiness probe for older console clients. */
 export const verify = mutation({
   args: { operatorKey: v.string() },
   returns: v.boolean(),

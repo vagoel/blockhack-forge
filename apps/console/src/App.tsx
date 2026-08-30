@@ -5,12 +5,6 @@ import GalleryView from "./views/GalleryView";
 import RecentBuildsView from "./views/RecentBuildsView";
 import ProjectorView from "./views/ProjectorView";
 import StudioSidebar from "./components/StudioSidebar";
-import {
-  forgetOperatorKey,
-  loadOperatorKey,
-  OperatorProvider,
-  OperatorUnlock,
-} from "./operator";
 
 type Route =
   | { view: "build"; buildId: string | null }
@@ -35,23 +29,10 @@ function parseRoute(): Route {
 }
 
 export default function App() {
-  const [operatorKey, setOperatorKey] = useState(loadOperatorKey);
-
-  if (!operatorKey) return <OperatorUnlock onUnlock={setOperatorKey} />;
-
-  return (
-    <OperatorProvider operatorKey={operatorKey}>
-      <ConsoleApp
-        onLock={() => {
-          forgetOperatorKey();
-          setOperatorKey("");
-        }}
-      />
-    </OperatorProvider>
-  );
+  return <ConsoleApp />;
 }
 
-function ConsoleApp({ onLock }: { onLock: () => void }) {
+function ConsoleApp() {
   const [route, setRoute] = useState<Route>(parseRoute);
 
   useEffect(() => {
@@ -60,7 +41,7 @@ function ConsoleApp({ onLock }: { onLock: () => void }) {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  // Compile in-browser while an unlocked console tab is open. Deploys and CI
+  // Compile in-browser while a console tab is open. Deploys and CI
   // can use the equivalent `pnpm compile` headless path.
   const worker = useCompileWorker();
 
@@ -70,7 +51,7 @@ function ConsoleApp({ onLock }: { onLock: () => void }) {
 
   return (
     <div className="studio-shell">
-      <StudioSidebar active={route.view} worker={worker} onLock={onLock} />
+      <StudioSidebar active={route.view} worker={worker} />
       <div className="studio-workspace">
         <header className="mobile-studio-bar">
           <a className="mobile-brand" href="#/build">
@@ -82,7 +63,6 @@ function ConsoleApp({ onLock }: { onLock: () => void }) {
             <a className={route.view === "gallery" ? "is-active" : ""} href="#/gallery">Projects</a>
             <a className={route.view === "recent" ? "is-active" : ""} href="#/recent">Activity</a>
           </nav>
-          <button type="button" onClick={onLock} aria-label="Lock studio">⌁</button>
         </header>
         <main className={`studio-main studio-main-${route.view}`}>
         {route.view === "build" && <BuildView buildId={route.buildId} />}

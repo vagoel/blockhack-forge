@@ -99,28 +99,6 @@ function fail(sourceFile: ts.SourceFile, node: ts.Node, message: string): never 
   throw new Error(`Generated source policy: ${message} (${lineAndColumn(sourceFile, node)})`);
 }
 
-function createChecker(sourceFile: ts.SourceFile, source: string): ts.TypeChecker {
-  const fileName = sourceFile.fileName;
-  const options: ts.CompilerOptions = {
-    jsx: ts.JsxEmit.Preserve,
-    noLib: true,
-    noResolve: true,
-    target: ts.ScriptTarget.ES2022,
-  };
-  const host: ts.CompilerHost = {
-    fileExists: (candidate) => candidate === fileName,
-    getCanonicalFileName: (candidate) => candidate,
-    getCurrentDirectory: () => "",
-    getDefaultLibFileName: () => "",
-    getNewLine: () => "\n",
-    getSourceFile: (candidate) => (candidate === fileName ? sourceFile : undefined),
-    readFile: (candidate) => (candidate === fileName ? source : undefined),
-    useCaseSensitiveFileNames: () => true,
-    writeFile: () => {},
-  };
-  return ts.createProgram({ rootNames: [fileName], options, host }).getTypeChecker();
-}
-
 function isNonLexicalName(node: ts.Identifier): boolean {
   const parent = node.parent;
   return (
@@ -157,31 +135,96 @@ function isAmbientDeclaration(node: ts.Node): boolean {
   return false;
 }
 
-function hasRuntimeBinding(symbol: ts.Symbol | undefined): boolean {
-  return Boolean(
-    symbol?.declarations?.some((declaration) => {
-      if (isAmbientDeclaration(declaration)) return false;
-      if (ts.isImportClause(declaration)) return !declaration.isTypeOnly;
-      if (ts.isNamespaceImport(declaration)) {
-        return !declaration.parent.isTypeOnly;
+type RuntimeBindings = Map<ts.Node, Set<string>>;
+
+function addRuntimeBinding(bindings: RuntimeBindings, scope: ts.Node, name: string): void {
+  const names = bindings.get(scope) ?? new Set<string>();
+  names.add(name);
+  bindings.set(scope, names);
+}
+
+function addBindingName(bindings: RuntimeBindings, scope: ts.Node, name: ts.BindingName): void {
+  if (ts.isIdentifier(name)) {
+    addRuntimeBinding(bindings, scope, name.text);
+    return;
+  }
+  for (const element of name.elements) {
+    if (ts.isBindingElement(element)) addBindingName(bindings, scope, element.name);
+  }
+}
+
+function nearestRuntimeScope(node: ts.Node, blockScoped: boolean): ts.Node {
+  for (let current = node.parent; current; current = current.parent) {
+    if (ts.isSourceFile(current)) return current;
+    if (blockScoped) {
+      if (
+        ts.isBlock(current) ||
+        ts.isCaseBlock(current) ||
+        ts.isModuleBlock(current) ||
+        ts.isForStatement(current) ||
+        ts.isForInStatement(current) ||
+        ts.isForOfStatement(current) ||
+        ts.isCatchClause(current)
+      ) {
+        return current;
       }
-      if (ts.isImportSpecifier(declaration)) {
-        return !declaration.isTypeOnly && !declaration.parent.parent.isTypeOnly;
+    } else if (ts.isFunctionLike(current)) {
+      return current;
+    }
+  }
+  return node.getSourceFile();
+}
+
+function collectRuntimeBindings(sourceFile: ts.SourceFile): RuntimeBindings {
+  const bindings: RuntimeBindings = new Map();
+  const visit = (node: ts.Node): void => {
+    if (!isAmbientDeclaration(node)) {
+      if (ts.isVariableDeclaration(node) && ts.isVariableDeclarationList(node.parent)) {
+        const blockScoped = (node.parent.flags & ts.NodeFlags.BlockScoped) !== 0;
+        addBindingName(bindings, nearestRuntimeScope(node.parent, blockScoped), node.name);
+      } else if (ts.isParameter(node) && ts.isFunctionLike(node.parent)) {
+        addBindingName(bindings, node.parent, node.name);
+      } else if (ts.isCatchClause(node) && node.variableDeclaration) {
+        addBindingName(bindings, node, node.variableDeclaration.name);
+      } else if (ts.isFunctionDeclaration(node) && node.name && node.body) {
+        addRuntimeBinding(bindings, nearestRuntimeScope(node, true), node.name.text);
+      } else if (ts.isClassDeclaration(node) && node.name) {
+        addRuntimeBinding(bindings, nearestRuntimeScope(node, true), node.name.text);
+      } else if (ts.isEnumDeclaration(node)) {
+        addRuntimeBinding(bindings, nearestRuntimeScope(node, true), node.name.text);
+      } else if (ts.isModuleDeclaration(node) && ts.isIdentifier(node.name)) {
+        addRuntimeBinding(bindings, nearestRuntimeScope(node, true), node.name.text);
+      } else if (ts.isFunctionExpression(node) && node.name) {
+        addRuntimeBinding(bindings, node, node.name.text);
+      } else if (ts.isClassExpression(node) && node.name) {
+        addRuntimeBinding(bindings, node, node.name.text);
+      } else if (ts.isImportDeclaration(node) && node.importClause) {
+        const clause = node.importClause;
+        if (!clause.isTypeOnly && clause.name) {
+          addRuntimeBinding(bindings, sourceFile, clause.name.text);
+        }
+        const imports = clause.namedBindings;
+        if (!clause.isTypeOnly && imports && ts.isNamespaceImport(imports)) {
+          addRuntimeBinding(bindings, sourceFile, imports.name.text);
+        }
+        if (!clause.isTypeOnly && imports && ts.isNamedImports(imports)) {
+          for (const element of imports.elements) {
+            if (!element.isTypeOnly) addRuntimeBinding(bindings, sourceFile, element.name.text);
+          }
+        }
       }
-      if (ts.isFunctionDeclaration(declaration)) return Boolean(declaration.body);
-      return (
-        ts.isVariableDeclaration(declaration) ||
-        ts.isParameter(declaration) ||
-        ts.isBindingElement(declaration) ||
-        ts.isFunctionExpression(declaration) ||
-        ts.isClassDeclaration(declaration) ||
-        ts.isClassExpression(declaration) ||
-        ts.isEnumDeclaration(declaration) ||
-        ts.isEnumMember(declaration) ||
-        ts.isModuleDeclaration(declaration)
-      );
-    }),
-  );
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return bindings;
+}
+
+function hasRuntimeBinding(node: ts.Identifier, bindings: RuntimeBindings): boolean {
+  for (let current: ts.Node | undefined = node.parent; current; current = current.parent) {
+    if (bindings.get(current)?.has(node.text)) return true;
+  }
+  return false;
 }
 
 /** Parse and enforce the code capabilities promised by DEVIN_SYSTEM.md. */
@@ -211,9 +254,9 @@ export function validateGeneratedSource(
     throw new Error(`Generated TSX parse error: ${message} (${pos.line + 1}:${pos.character + 1})`);
   }
 
-  // Bind the source without ambient libraries. This lets us distinguish a
-  // harmless local `open`/`close` from the browser globals of the same names.
-  const checker = createChecker(sourceFile, source);
+  // Resolve lexical bindings from syntax so production browser bundling cannot
+  // change whether a harmless local `open`/`close` is treated as a global.
+  const runtimeBindings = collectRuntimeBindings(sourceFile);
 
   const runtimeNamespaces = new Set<string>();
   for (const statement of sourceFile.statements) {
@@ -231,7 +274,9 @@ export function validateGeneratedSource(
     if (bindings && ts.isNamedImports(bindings)) {
       for (const element of bindings.elements) {
         const imported = element.propertyName?.text ?? element.name.text;
-        if (imported === "default") runtimeNamespaces.add(element.name.text);
+        if (imported === "default" || imported === "Runtime") {
+          runtimeNamespaces.add(element.name.text);
+        }
       }
     }
   }
@@ -295,7 +340,7 @@ export function validateGeneratedSource(
       ts.isIdentifier(node) &&
       SCOPE_AWARE_FORBIDDEN_GLOBALS.has(node.text) &&
       isValueReference(node) &&
-      !hasRuntimeBinding(checker.getSymbolAtLocation(node))
+      !hasRuntimeBinding(node, runtimeBindings)
     ) {
       fail(sourceFile, node, `${node.text} is not available to generated apps`);
     }

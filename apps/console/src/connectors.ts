@@ -30,14 +30,6 @@ export const CONNECTORS: readonly ConnectorDefinition[] = [
     monogram: "CT",
   },
   {
-    id: "openai",
-    name: "OpenAI",
-    eyebrow: "Intelligence",
-    description: "AI-powered features inside the finished app.",
-    color: "#665cf6",
-    monogram: "AI",
-  },
-  {
     id: "vercel",
     name: "Vercel",
     eyebrow: "Delivery",

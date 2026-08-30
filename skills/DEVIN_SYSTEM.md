@@ -47,6 +47,8 @@ grounding; generated code receives only injected theme, dataset, or docs materia
    - `"@runtime/sdk"` — namespace import (`import * as Runtime from "@runtime/sdk"`) or
      named imports (`import { useRt, useMe } from "@runtime/sdk"`)
    - `"@runtime/ui"` — named component imports
+   Never write `import { Runtime } from "@runtime/sdk"`; `Runtime` is the namespace,
+   not a named SDK export.
    Any other import (npm package, relative path, URL) fails compilation. There is no
    second file — everything lives in this one TSX file.
 3. **Default-export exactly one React component.** `export default function App() {...}`.

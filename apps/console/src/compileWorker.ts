@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "convex/react";
 import * as esbuild from "esbuild-wasm";
 import wasmURL from "esbuild-wasm/esbuild.wasm?url";
 import { api } from "./convexClient";
+import { COMPILER_SHIMS } from "./compilerShims";
 import { useOperatorKey } from "./operator";
 
 export type CompileWorkerStatus = {
@@ -54,15 +55,6 @@ function ensureSourcePolicy(): Promise<typeof import("./sourcePolicy")> {
 // the same version.
 const inFlight = new Set<string>();
 
-const SHIMS: Record<string, string> = {
-  react: "module.exports = window.React;",
-  "react-dom": "module.exports = window.ReactDOM || {};",
-  "react/jsx-runtime":
-    "const R=window.React; exports.jsx=(t,p,k)=>R.createElement(t,k===undefined?p:{...p,key:k}); exports.jsxs=exports.jsx; exports.Fragment=R.Fragment;",
-  "@runtime/sdk": "module.exports = window.Runtime;",
-  "@runtime/ui": "module.exports = window.RuntimeUI;",
-};
-
 const shimPlugin: esbuild.Plugin = {
   name: "runtime-shims",
   setup(build) {
@@ -71,7 +63,7 @@ const shimPlugin: esbuild.Plugin = {
       (args) => ({ path: args.path, namespace: "shim" }),
     );
     build.onLoad({ filter: /.*/, namespace: "shim" }, (args) => ({
-      contents: SHIMS[args.path] ?? "module.exports = {};",
+      contents: COMPILER_SHIMS[args.path] ?? "module.exports = {};",
       loader: "js",
     }));
   },

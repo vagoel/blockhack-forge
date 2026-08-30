@@ -73,14 +73,6 @@ const STARTERS = [
     tags: ["Context"],
     tone: "amber",
   },
-  {
-    title: "AI workspace",
-    detail: "A focused assistant with polished loading and result states",
-    prompt:
-      "Build a polished AI writing workspace that helps turn a rough brief into a structured launch narrative, with guided inputs, explicit generation, useful loading and error states, and editable local results.",
-    tags: ["OpenAI"],
-    tone: "sky",
-  },
 ] as const;
 
 type DevinMode = "default" | "normal" | "fast" | "lite" | "ultra" | "fusion";

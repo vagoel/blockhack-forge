@@ -62,8 +62,10 @@ projector branch. Every audience-writable collection needs appropriate guards.
 
 ## 3. Source contract — violations fail compilation
 
-1. Import only `react`, `@runtime/sdk`, and `@runtime/ui`. No relative, URL, or other npm
-   imports. Default-export exactly one React component.
+1. Import only `react`, `@runtime/sdk`, and `@runtime/ui`. Use
+   `import * as Runtime from "@runtime/sdk"` or import individual hooks; never use
+   `import { Runtime } from "@runtime/sdk"`. No relative, URL, or other npm imports.
+   Default-export exactly one React component.
 2. Never use `fetch`, XHR, WebSocket, EventSource, browser storage, cookies, `window`,
    `document`, `self`, `top`, `parent`, `location`, `history`, `open`, `navigator`,
    workers, dynamic import, `eval`, `Function`, or HTML injection.

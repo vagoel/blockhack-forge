@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import { ConvexHttpClient } from "convex/browser";
 import { anyApi } from "convex/server";
+import { COMPILER_SHIMS } from "../apps/console/src/compilerShims.ts";
 import { validateGeneratedSource } from "../apps/console/src/sourcePolicy.ts";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -18,21 +19,12 @@ function envValue(file, name) {
   return line.slice(name.length + 1).trim().replace(/^['"]|['"]$/g, "");
 }
 
-const operatorKey = readFileSync(path.join(root, ".operator-key"), "utf8").trim();
+const operatorKey = "";
 const deploymentUrl = envValue(
   path.join(root, "apps/console/.env.local"),
   "VITE_CONVEX_URL",
 );
 const client = new ConvexHttpClient(deploymentUrl);
-
-const shims = {
-  react: "module.exports = window.React;",
-  "react-dom": "module.exports = window.ReactDOM || {};",
-  "react/jsx-runtime":
-    "const R=window.React; exports.jsx=(t,p,k)=>R.createElement(t,k===undefined?p:{...p,key:k}); exports.jsxs=exports.jsx; exports.Fragment=R.Fragment;",
-  "@runtime/sdk": "module.exports = window.Runtime;",
-  "@runtime/ui": "module.exports = window.RuntimeUI;",
-};
 
 const shimPlugin = {
   name: "runtime-shims",
@@ -42,7 +34,7 @@ const shimPlugin = {
       (args) => ({ path: args.path, namespace: "shim" }),
     );
     esbuild.onLoad({ filter: /.*/, namespace: "shim" }, (args) => ({
-      contents: shims[args.path] ?? "module.exports = {};",
+      contents: COMPILER_SHIMS[args.path] ?? "module.exports = {};",
       loader: "js",
     }));
   },
