@@ -1,0 +1,213 @@
+/* Forge — minimal, story-driven deck */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --background-color: #121317;
+
+  --heading-font: "Space Grotesk", Helvetica, sans-serif;
+  --body-font: "Inter", Helvetica, sans-serif;
+  --mono-font: "JetBrains Mono", Menlo, monospace;
+  --base-font-size: 32px;
+
+  --primary-color: #F96D00;
+  --text-color: #F4F4F2;
+  --muted-color: #8B909B;
+}
+
+/* ===========================================
+   BASE
+   =========================================== */
+
+.reveal {
+  font-family: var(--body-font);
+  font-size: var(--base-font-size);
+}
+
+.reveal strong,
+.reveal b {
+  font-weight: 600;
+}
+
+.reveal-viewport {
+  background-color: var(--background-color);
+}
+
+.reveal .slides section {
+  text-align: center;
+}
+
+.reveal h1,
+.reveal h2,
+.reveal h3 {
+  font-family: var(--heading-font);
+  text-transform: none;
+  color: var(--text-color);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.reveal p {
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.accent { color: var(--primary-color); }
+.text-muted { color: var(--muted-color) !important; }
+
+/* Slow, soft fragment motion */
+.reveal .fragment.fade-up {
+  transform: translate(0, 16px);
+  transition: all 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* ===========================================
+   TYPE ROLES
+   =========================================== */
+
+/* Big narrative statement — the core of every slide */
+.reveal .statement {
+  font-size: 44pt;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+/* Supporting line under a statement */
+.reveal .sub {
+  font-size: 18pt;
+  color: var(--muted-color);
+  font-weight: 300;
+  margin-top: 28px;
+}
+
+/* Small uppercase label above content */
+.reveal .kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  font-size: 13pt;
+  color: var(--primary-color);
+  font-weight: 600;
+  margin-bottom: 30px;
+}
+
+/* Logo wordmark — three sizes for auto-animate shrink */
+.reveal .logo {
+  font-size: 110pt;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+
+.reveal .logo-small { font-size: 64pt; }
+.reveal .logo-tiny  { font-size: 28pt; color: var(--muted-color); }
+
+/* ===========================================
+   THE PAIN LIST
+   =========================================== */
+
+.reveal .pain-item {
+  font-size: 22pt;
+  color: var(--muted-color);
+  font-weight: 300;
+  margin: 10px 0;
+}
+
+/* ===========================================
+   PROMPT LINE (the one-sentence interface)
+   =========================================== */
+
+.reveal .prompt-line {
+  display: inline-block;
+  margin-top: 44px;
+  padding: 22px 34px;
+  border: 1px solid #2c313b;
+  border-radius: 10px;
+  background: #1a1c22;
+}
+
+.reveal .prompt-line p {
+  font-family: var(--mono-font);
+  font-size: 16pt;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.reveal .prompt-dim p {
+  color: var(--muted-color);
+}
+
+/* Blinking caret */
+.cursor {
+  color: var(--primary-color);
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* ===========================================
+   PIPELINE (grounded → written → live)
+   =========================================== */
+
+.reveal .pipeline {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 30px;
+  margin-top: 60px;
+}
+
+.reveal .pipe-step {
+  font-family: var(--heading-font);
+  font-size: 24pt;
+  font-weight: 600;
+  margin: 0;
+}
+
+.reveal .pipe-step i {
+  color: var(--primary-color);
+  font-size: 20pt;
+  margin-right: 8px;
+}
+
+.reveal .pipe-who {
+  font-size: 12pt;
+  color: var(--muted-color);
+  margin: 8px 0 0 0;
+}
+
+.reveal .pipe-arrow {
+  font-size: 24pt;
+  color: var(--muted-color);
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* ===========================================
+   QR MOMENT
+   =========================================== */
+
+.reveal .qr-mark {
+  font-size: 130pt;
+  color: var(--text-color);
+  margin: 20px 0;
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.04); opacity: 0.85; }
+}
+
+/* ===========================================
+   STACK LINES (partner tech)
+   =========================================== */
+
+.reveal .stack-line {
+  font-family: var(--heading-font);
+  font-size: 36pt;
+  font-weight: 600;
+  margin: 18px 0;
+}
