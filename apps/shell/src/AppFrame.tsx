@@ -106,6 +106,7 @@ export function AppFrame(props: {
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const lastHbRef = useRef(Date.now());
+  const readyRef = useRef(false);
   const remountsRef = useRef(0);
   const lastErrorReportRef = useRef(0);
   const latest = useRef(props);
@@ -129,6 +130,7 @@ export function AppFrame(props: {
   useEffect(() => {
     remountsRef.current = 0;
     lastHbRef.current = Date.now();
+    readyRef.current = false;
     setFailed(false);
     setEpoch(0);
   }, [version._id]);
@@ -143,6 +145,7 @@ export function AppFrame(props: {
       const { app: a, sessionId, name, mode } = latest.current;
 
       if (data.type === "boot") {
+        readyRef.current = false;
         lastHbRef.current = Date.now();
         frameWindow.postMessage(
           {
@@ -160,7 +163,10 @@ export function AppFrame(props: {
         );
       } else if (data.type === "ready" || data.type === "hb") {
         lastHbRef.current = Date.now();
-        if (data.type === "ready") remountsRef.current = 0;
+        if (data.type === "ready") {
+          readyRef.current = true;
+          remountsRef.current = 0;
+        }
       } else if (data.type === "error") {
         const now = Date.now();
         if (now - lastErrorReportRef.current >= ERROR_REPORT_MIN_INTERVAL_MS) {
@@ -181,10 +187,12 @@ export function AppFrame(props: {
     return () => window.removeEventListener("message", onMessage);
   }, [reportError]);
 
-  // Watchdog: >7s without a heartbeat -> remount the iframe (max 3 times).
+  // Startup watchdog: remount only when the iframe never reaches `ready`.
+  // Once rendered, a throttled heartbeat must not tear down visible content.
   useEffect(() => {
     if (failed || !runtimeJs) return;
     const iv = setInterval(() => {
+      if (readyRef.current) return;
       // Hidden tabs throttle timers (both ours and the iframe's heartbeat);
       // treat hidden time as alive so re-focusing never triggers a remount.
       if (document.hidden) {

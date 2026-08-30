@@ -8,6 +8,7 @@ import { composeDevinPrompt } from "./lib/skillMatch";
 import { appSpecSchema } from "./lib/appSpec";
 import { appConnectors } from "./lib/connectors";
 import { sourceFingerprint } from "./lib/sourceFingerprint";
+import { devinSessionVisibilityFields } from "./lib/devinSession";
 import {
   devinModeLabel,
   devinModeRequestFields,
@@ -158,21 +159,29 @@ export const start = internalAction({
       let rows: unknown[] | null = null;
       let dataUrl: string | null = null;
       let docsGrounding: string | null = null;
+      let styleGrounding: string | null = null;
 
       if (styleUrl || detected) {
         await ctx.runMutation(internal.builds.patch, { buildId, status: "grounding" });
       }
       if (styleUrl) {
-        try {
-          theme = await ctx.runAction(internal.contextdev.styleguide, { url: styleUrl });
-        } catch {
-          theme = null;
-        }
+        const [themeResult, sourceResult] = await Promise.all([
+          ctx.runAction(internal.contextdev.styleguide, { url: styleUrl }).catch(() => null),
+          ctx.runAction(internal.contextdev.sourceStyle, { url: styleUrl }).catch(() => null),
+        ]);
+        theme = themeResult;
+        styleGrounding = typeof sourceResult === "string" ? sourceResult : null;
         await log(
           "context",
           theme
             ? `brand styleguide extracted from ${styleUrl}`
             : `styleguide unavailable for ${styleUrl} (skipped)`
+        );
+        await log(
+          "context",
+          styleGrounding
+            ? `rendered source style extracted from ${styleUrl}`
+            : `rendered source unavailable for ${styleUrl} (skipped)`
         );
       }
 
@@ -233,6 +242,7 @@ export const start = internalAction({
         datasetSample: rows ? rows.slice(0, 5) : null,
         datasetName: rows ? "data" : null,
         docsGrounding,
+        styleGrounding,
         connectors,
         // v3's documented create contract has no playbook_id field, so carry
         // the master prompt inline there. Legacy v1 may use the synced playbook.
@@ -260,7 +270,7 @@ export const start = internalAction({
           : {
               ...commonBody,
               ...devinModeRequestFields(config.apiVersion, devinMode),
-              unlisted: true,
+              ...devinSessionVisibilityFields(config.apiVersion),
               idempotent: true,
             };
 

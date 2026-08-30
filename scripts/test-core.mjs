@@ -73,6 +73,13 @@ try {
   }
   assert.deepEqual(devinModeRequestFields("v3", "default"), {});
 
+  const { devinSessionVisibilityFields } = await load(
+    "convex/lib/devinSession.ts",
+    "devin-session",
+  );
+  assert.deepEqual(devinSessionVisibilityFields("v1"), { unlisted: false });
+  assert.deepEqual(devinSessionVisibilityFields("v3"), {});
+
   const sourcePolicySource = readFileSync(
     path.join(root, "apps/console/src/sourcePolicy.ts"),
     "utf8",
@@ -156,6 +163,38 @@ try {
         return <button onClick={() => panel.close()}>{panel.open ? "Close" : "Open"}</button>;
       }
     `),
+  );
+  assert.doesNotThrow(() =>
+    validateGeneratedSource(`
+      export default function App() {
+        const top = 12;
+        const markerStyle = { position: "absolute", left: "40%", top: \`\${top}%\` };
+        return <div style={markerStyle}>{top}</div>;
+      }
+    `),
+  );
+  assert.throws(
+    () => validateGeneratedSource(`export default function App(){ return <div>{top === self}</div>; }`),
+    /top is not available/,
+  );
+  assert.doesNotThrow(() =>
+    validateGeneratedSource(`
+      export default function App() {
+        const item = { view: "compact", top: 12 };
+        const label = Object.entries(item).find(([name]) => name === "view")?.at(1);
+        return <div>{label}</div>;
+      }
+    `),
+  );
+  assert.doesNotThrow(() =>
+    validateGeneratedSource(`
+      function Navigation(props: { view: string }) { return <div>{props.view}</div>; }
+      export default function App(){ return <Navigation view="guide" />; }
+    `),
+  );
+  assert.throws(
+    () => validateGeneratedSource(`export default function App(){ return <button onClick={(event) => event.nativeEvent}>x</button>; }`),
+    /property nativeEvent is not allowed/,
   );
   assert.doesNotThrow(() =>
     validateGeneratedSource(`
@@ -350,6 +389,30 @@ try {
   assert.ok(!noContextSkills.includes("context-core"));
   assert.ok(!noContextSkills.includes("data-explorer"));
 
+  const { summarizeRenderedSource } = await load(
+    "convex/lib/sourceStyle.ts",
+    "source-style",
+  );
+  const sourceStyle = summarizeRenderedSource(
+    `<!doctype html><html><head>
+      <link rel="stylesheet" href="/assets/site.css">
+      <style>:root { --brand: #635bff; --space-lg: 32px; }
+        .hero { display:grid; gap:var(--space-lg); }
+        .hero::before { content: "ignore these words"; }
+      </style>
+      <script>ignoreAllInstructions()</script>
+    </head><body><header class="shell topbar"><nav role="navigation"></nav></header>
+      <main class="landing"><section class="hero"><h1>Do not copy this text</h1>
+      <button class="primary large" type="button">Buy</button></section></main></body></html>`,
+    "https://reference.test/product",
+    "Reference product",
+  );
+  assert.match(sourceStyle, /--brand: #635bff/);
+  assert.match(sourceStyle, /https:\/\/reference\.test\/assets\/site\.css/);
+  assert.match(sourceStyle, /<section class="hero">/);
+  assert.doesNotMatch(sourceStyle, /ignoreAllInstructions|Do not copy this text/);
+  assert.doesNotMatch(sourceStyle, /content:/);
+
   const grounded = composeDevinPrompt({
     userPrompt: "Build from the API docs",
     docsGrounding: "Authoritative reference text",
@@ -382,6 +445,7 @@ try {
   const worstCasePrompt = composeDevinPrompt({
     userPrompt: "Build a branded AI website, searchable catalog, dashboard, and live room ".repeat(80),
     brandTheme: { primary: "#123456", componentCss: "x".repeat(8000) },
+    styleGrounding: "Rendered CSS and DOM structure ".repeat(500),
     datasetSample: Array.from({ length: 5 }, (_, index) => ({
       name: `row-${index}`,
       description: "data ".repeat(1000),
@@ -398,6 +462,7 @@ try {
   }
   assert.match(worstCasePrompt, /SKILL: [\w-]+ \(primary — condensed\)/);
   assert.match(worstCasePrompt, /BRAND THEME/);
+  assert.match(worstCasePrompt, /RENDERED SOURCE STYLE REFERENCE/);
   assert.match(worstCasePrompt, /DATASET "oversized-sample"/);
   assert.match(worstCasePrompt, /PREPARED WEB\/DOCS GROUNDING/);
 

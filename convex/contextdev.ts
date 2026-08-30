@@ -6,6 +6,7 @@ import { api, internal } from "./_generated/api";
 import type { Theme } from "./lib/appSpec";
 import { hasAppConnector } from "./lib/connectors";
 import { requireOperator } from "./lib/operator";
+import { summarizeRenderedSource } from "./lib/sourceStyle";
 
 // Convex runtimes expose process.env; @types/node is not part of this tsconfig.
 declare const process: { env: Record<string, string | undefined> };
@@ -228,6 +229,50 @@ export const styleguide = internalAction({
         await ctx.runMutation(internal.builds.cachePut, { cacheKey, value: theme });
       }
       return theme;
+    });
+  },
+});
+
+function renderedHtml(body: any): string | null {
+  for (const value of [body?.html, body?.data?.html, body?.result?.html]) {
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return null;
+}
+
+export const sourceStyle = internalAction({
+  args: { url: v.string() },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, { url }): Promise<string | null> => {
+    const cacheKey = `source-style:${url}`;
+    const cached = await ctx.runQuery(internal.builds.cacheGet, { cacheKey });
+    if (typeof cached === "string") return cached;
+    return await withContextLease(ctx, async () => {
+      let parsed: URL;
+      try {
+        parsed = new URL(url);
+        if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
+      } catch {
+        return null;
+      }
+
+      const body = await get("/web/scrape/html", {
+        url: parsed.toString(),
+        includeFrames: "false",
+        timeoutMS: "30000",
+      });
+      const html = renderedHtml(body);
+      if (!html) return null;
+      const title = body?.metadata?.title ?? body?.title ?? body?.data?.metadata?.title;
+      const grounding = summarizeRenderedSource(
+        html,
+        body?.metadata?.finalUrl ?? body?.url ?? parsed.toString(),
+        typeof title === "string" ? title : null,
+      );
+      if (grounding) {
+        await ctx.runMutation(internal.builds.cachePut, { cacheKey, value: grounding });
+      }
+      return grounding;
     });
   },
 });

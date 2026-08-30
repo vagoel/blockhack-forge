@@ -7,8 +7,13 @@ summary: Apply Context-derived branding only through the normalized live Runtime
 
 # Context Brand — use the normalized theme, not the raw API
 
-When Context grounding includes brand/style information, the builder normalizes it into
-the app theme. Generated code accesses only `Runtime.useTheme()` and the CSS variables:
+When Context grounding includes brand/style information, the builder normalizes its core
+tokens into the app theme and may also provide a bounded excerpt of the page's rendered
+CSS and DOM structure. Use that source-derived reference to reproduce layout rhythm,
+typographic hierarchy, spacing, surface treatment, and component character—not to clone
+page copy, scripts, tracking, links, proprietary assets, or unsupported claims.
+
+Generated code accesses the applied theme only through `Runtime.useTheme()` and the CSS variables:
 `--rt-primary`, `--rt-secondary`, `--rt-background`, `--rt-surface`, `--rt-text`,
 `--rt-accent`, `--rt-radius`, and `--rt-font`. Never call `/brand/retrieve` or
 `/web/styleguide`, import a Context SDK, fetch the source URL, or assume raw brand fields

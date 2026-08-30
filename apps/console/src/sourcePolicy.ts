@@ -13,11 +13,9 @@ const REALTIME_RUNTIME_APIS = new Set([
   "useRt",
 ]);
 const OPENAI_RUNTIME_APIS = new Set(["useAI"]);
-const SCOPE_AWARE_FORBIDDEN_GLOBALS = new Set(["open", "close"]);
-
 // These globals are unnecessary for a generated audience app and would let it
 // bypass the fixed Runtime surface. The CSP in the shell is the second layer.
-const FORBIDDEN_IDENTIFIERS = new Set([
+const FORBIDDEN_GLOBALS = new Set([
   "window",
   "document",
   "globalThis",
@@ -50,6 +48,8 @@ const FORBIDDEN_IDENTIFIERS = new Set([
   "require",
   "module",
   "exports",
+  "open",
+  "close",
 ]);
 
 const FORBIDDEN_PROPERTIES = new Set([
@@ -63,7 +63,6 @@ const FORBIDDEN_PROPERTIES = new Set([
   "srcdoc",
   "dangerouslySetInnerHTML",
   "nativeEvent",
-  "view",
   "parentNode",
   "ownerElement",
   "getRootNode",
@@ -333,12 +332,9 @@ export function validateGeneratedSource(
       defaultExports += 1;
     }
 
-    if (ts.isIdentifier(node) && FORBIDDEN_IDENTIFIERS.has(node.text)) {
-      fail(sourceFile, node, `${node.text} is not available to generated apps`);
-    }
     if (
       ts.isIdentifier(node) &&
-      SCOPE_AWARE_FORBIDDEN_GLOBALS.has(node.text) &&
+      FORBIDDEN_GLOBALS.has(node.text) &&
       isValueReference(node) &&
       !hasRuntimeBinding(node, runtimeBindings)
     ) {

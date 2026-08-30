@@ -237,13 +237,13 @@ function BuildForm() {
           {contextEnabled ? (
             <div className="reference-field">
               <span className="reference-icon" aria-hidden="true">↗</span>
-              <label htmlFor="styleUrl">Ground the look in a URL</label>
+              <label htmlFor="styleUrl">Use a website as the visual reference</label>
               <input
                 id="styleUrl"
                 type="url"
                 value={styleUrl}
                 onChange={(event) => setStyleUrl(event.target.value)}
-                placeholder="https://your-brand.com"
+                placeholder="https://the-site-to-match.com"
               />
             </div>
           ) : null}

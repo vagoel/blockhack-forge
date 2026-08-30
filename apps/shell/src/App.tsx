@@ -1,7 +1,7 @@
 // Audience SPA: hash routing between the join screen, the stage pointer,
 // and per-app routes (waiting screen while building, iframe once live).
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useQuery } from "convex/react";
 import { anyApi } from "convex/server";
 import {
   AppFrame,
@@ -130,15 +130,7 @@ function AppRoute(props: { slug: string; mode: Mode; sessionId: string }) {
     app.status === "live" && typeof version?.bundle === "string" && version.bundle.length > 0;
 
   if (!live || !version) {
-    return (
-      <WaitingScreen
-        app={app}
-        slug={slug}
-        sessionId={sessionId}
-        name={name}
-        onNameChange={changeName}
-      />
-    );
+    return <WaitingScreen app={app} />;
   }
 
   return (
@@ -179,68 +171,17 @@ function NotFoundScreen(props: { slug: string }) {
   );
 }
 
-// ---------- waiting screen (presence like runtime-sdk) ----------
+// ---------- waiting screen ----------
 
-function usePresenceCount(slug: string, sessionId: string): number | null {
-  const heartbeat = useMutation(anyApi.presence.heartbeat);
-  const disconnect = useMutation(anyApi.presence.disconnect);
-  const [roomToken, setRoomToken] = useState<string | null>(null);
-  const tabId = useRef(
-    globalThis.crypto?.randomUUID?.() ?? String(Math.random()).slice(2)
-  ).current;
-
-  useEffect(() => {
-    let stopped = false;
-    let sessionToken: string | null = null;
-    const beat = async () => {
-      try {
-        const res = (await heartbeat({
-          roomId: slug,
-          userId: sessionId,
-          sessionId: tabId,
-          interval: 10000,
-        })) as { roomToken: string; sessionToken: string } | null;
-        if (!stopped && res) {
-          setRoomToken(res.roomToken);
-          sessionToken = res.sessionToken;
-        }
-      } catch {
-        // presence is best-effort
-      }
-    };
-    void beat();
-    const iv = setInterval(() => void beat(), 10000);
-    return () => {
-      stopped = true;
-      clearInterval(iv);
-      if (sessionToken) void disconnect({ sessionToken }).catch(() => {});
-    };
-  }, [heartbeat, disconnect, slug, sessionId, tabId]);
-
-  const list = useQuery(anyApi.presence.list, roomToken ? { roomToken } : "skip") as
-    | Array<{ userId: string; online?: boolean }>
-    | undefined;
-
-  if (!Array.isArray(list)) return null;
-  return list.filter((e) => e.online !== false).length;
-}
-
-function WaitingScreen(props: {
-  app: ShellApp;
-  slug: string;
-  sessionId: string;
-  name: string;
-  onNameChange: (name: string) => void;
-}) {
-  const { app, slug, sessionId, name, onNameChange } = props;
-  const count = usePresenceCount(slug, sessionId);
+function WaitingScreen(props: { app: ShellApp }) {
+  const { app } = props;
   const hitError = app.status === "error";
 
   return (
     <div className="screen">
       <div className="card">
         <div className="pulse" aria-hidden="true" />
-        <h1>{app.name || slug}</h1>
+        <h1>{app.name || app.slug}</h1>
         <p className="building">
           {hitError ? "hit a snag — hang tight" : "being built"}
           <span className="dots" aria-hidden="true">
@@ -249,12 +190,6 @@ function WaitingScreen(props: {
             <span>.</span>
           </span>
         </p>
-        {count !== null && (
-          <p className="presence">
-            {count} {count === 1 ? "person" : "people"} here
-          </p>
-        )}
-        <NameChip name={name} onChange={onNameChange} />
       </div>
     </div>
   );
