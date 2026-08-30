@@ -127,7 +127,7 @@ code {
 /* Studio shell */
 .studio-shell {
   display: grid;
-  grid-template-columns: 242px minmax(0, 1fr);
+  grid-template-columns: 272px minmax(0, 1fr);
   min-height: 100vh;
   min-height: 100dvh;
 }
@@ -157,8 +157,8 @@ code {
 }
 
 .studio-brand {
-  min-height: 52px;
-  padding: 7px 10px 18px;
+  min-height: 62px;
+  padding: 7px 10px 20px;
 }
 
 .studio-brand > span:last-child {
@@ -166,14 +166,14 @@ code {
 }
 
 .studio-brand strong {
-  font-size: 16px;
+  font-size: 19px;
   letter-spacing: -0.02em;
 }
 
 .studio-brand small {
-  margin-top: 1px;
+  margin-top: 3px;
   color: #858b9b;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -181,31 +181,20 @@ code {
 
 .brand-mark {
   position: relative;
-  display: inline-flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 2px;
-  width: 30px;
-  height: 30px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
   flex: 0 0 auto;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 9px;
+  border-radius: 12px;
   background: linear-gradient(145deg, #7770ff, #4f43e7);
   box-shadow: 0 7px 22px rgba(81, 69, 226, 0.34);
-  padding-bottom: 7px;
 }
 
-.brand-mark span {
-  display: block;
-  width: 3px;
-  border-radius: 99px;
-  background: #fff;
-}
-
-.brand-mark span:nth-child(1) { height: 7px; opacity: 0.7; }
-.brand-mark span:nth-child(2) { height: 13px; }
-.brand-mark span:nth-child(3) { height: 9px; opacity: 0.82; }
+.brand-mark svg { width: 29px; height: 29px; overflow: visible; fill: #fff; }
+.brand-mark circle { fill: #8ce6bf; }
 
 .studio-nav {
   display: grid;
@@ -530,6 +519,7 @@ code {
 .builder-hero .section-kicker {
   margin-bottom: 12px;
   color: var(--accent);
+  font-size: 12px;
 }
 
 .builder-hero h1 {
@@ -546,7 +536,7 @@ code {
   max-width: 600px;
   margin: 18px auto 0;
   color: #697083;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .prompt-composer {
@@ -574,7 +564,7 @@ code {
   outline: 0;
   background: transparent;
   color: var(--ink);
-  font-size: 18px;
+  font-size: 19px;
   line-height: 1.55;
   padding: 23px 25px 12px;
 }
@@ -608,7 +598,7 @@ code {
 
 .reference-field label {
   color: #525969;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -618,7 +608,7 @@ code {
   outline: 0;
   background: transparent;
   color: var(--ink);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .reference-field input::placeholder { color: #a7acb8; }
@@ -650,13 +640,13 @@ code {
 
 .devin-mode-heading strong {
   color: #313542;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 750;
 }
 
 .devin-mode-heading small {
   color: #8b91a0;
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1.35;
 }
 
@@ -670,7 +660,7 @@ code {
   background: #181a23;
   box-shadow: 0 6px 15px rgba(24, 26, 35, 0.14);
   color: #fff;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -698,7 +688,7 @@ code {
   background: #fff;
   color: #343845;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   padding: 9px 29px 9px 11px;
   transition: 150ms ease;
@@ -747,7 +737,7 @@ code {
 .devin-mode-summary strong {
   overflow: hidden;
   color: #3a3d4a;
-  font-size: 9px;
+  font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -758,7 +748,7 @@ code {
   border-radius: 999px;
   background: #e9e7ff;
   color: #6258d7;
-  font-size: 6px;
+  font-size: 8px;
   font-style: normal;
   font-weight: 800;
   letter-spacing: 0.03em;
@@ -769,7 +759,7 @@ code {
   overflow: hidden;
   margin-top: 2px;
   color: #737a8a;
-  font-size: 7px;
+  font-size: 9px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -777,7 +767,7 @@ code {
 .devin-mode-summary > span:last-child {
   margin-top: 4px;
   color: #888e9d;
-  font-size: 7px;
+  font-size: 9px;
   font-weight: 650;
 }
 
@@ -785,7 +775,7 @@ code {
   grid-column: 2;
   margin: -2px 2px 0;
   color: #9a641f;
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1.4;
 }
 
@@ -817,7 +807,7 @@ code {
   border-radius: 999px;
   background: #fff;
   color: #5a6171;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
 }
 
@@ -838,7 +828,7 @@ code {
 
 .keyboard-hint {
   color: #a3a8b4;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .build-submit {
@@ -854,7 +844,7 @@ code {
   box-shadow: 0 8px 22px rgba(91, 80, 232, 0.23), inset 0 1px rgba(255,255,255,.24);
   color: #fff;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   transition: 150ms ease;
   transition-property: transform, box-shadow, filter;
@@ -896,7 +886,7 @@ code {
   border-radius: 9px;
   background: #fff8ef;
   color: #a66320;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .starter-section {
@@ -914,13 +904,13 @@ code {
 .starter-heading h2 {
   margin: 6px 0 0;
   color: #2d3140;
-  font-size: 17px;
+  font-size: 19px;
   letter-spacing: -0.02em;
 }
 
 .starter-heading > span {
   color: #9298a6;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .starter-grid {
@@ -988,7 +978,7 @@ code {
 }
 
 .starter-copy strong {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -996,7 +986,7 @@ code {
   margin-top: 2px;
   overflow: hidden;
   color: #777e8f;
-  font-size: 10px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1004,12 +994,12 @@ code {
 .starter-copy small {
   margin-top: 8px;
   color: #969ca9;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .starter-arrow {
   color: #9da2af;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 /* Connector rail */
@@ -1046,14 +1036,14 @@ code {
   border-radius: 999px;
   background: #fff;
   color: #777e8e;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
 }
 
 .connector-intro {
   margin: 10px 0 22px;
   color: #777e8e;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .connector-list {
@@ -1107,7 +1097,7 @@ code {
   border-radius: 11px;
   background: color-mix(in srgb, var(--connector-color) 10%, white);
   color: var(--connector-color);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: -0.03em;
 }
@@ -1116,7 +1106,7 @@ code {
   display: grid;
   min-width: 0;
   color: #747b8a;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.35;
 }
 
@@ -1129,12 +1119,12 @@ code {
 
 .connector-title-row strong {
   color: #252834;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .connector-eyebrow {
   color: color-mix(in srgb, var(--connector-color) 80%, #555);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 750;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -1143,7 +1133,7 @@ code {
 .connector-copy small {
   margin-top: 5px;
   color: var(--connector-color);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -1175,7 +1165,7 @@ code {
 
 .connector-switch > small {
   color: #8a909d;
-  font-size: 7px;
+  font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.08em;
   line-height: 1;
@@ -1243,7 +1233,7 @@ code {
 .connector-footnote p {
   margin: 0;
   color: #7b8291;
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.45;
 }
 
@@ -1967,6 +1957,10 @@ code {
   box-shadow: 0 15px 34px rgba(30, 35, 50, 0.09);
 }
 
+.project-card-clickable { cursor: pointer; }
+.project-card-clickable :is(a, button, input, textarea, select, summary, label) { cursor: auto; }
+.project-card-clickable :is(a, button, summary, label) { cursor: pointer; }
+
 .project-card-preview {
   position: relative;
   display: grid;
@@ -2258,7 +2252,7 @@ code {
 }
 
 @media (max-width: 1180px) {
-  .studio-shell { grid-template-columns: 204px minmax(0, 1fr); }
+  .studio-shell { grid-template-columns: 226px minmax(0, 1fr); }
   .build-studio { grid-template-columns: minmax(490px, 1fr) 294px; }
   .builder-home { padding-right: 34px; padding-left: 34px; }
   .connector-rail { padding-right: 14px; padding-left: 14px; }
@@ -2329,9 +2323,9 @@ code {
   .builder-home { padding: 48px 16px 38px; }
   .builder-hero { text-align: left; }
   .builder-hero h1 { font-size: 39px; }
-  .builder-hero p { margin-top: 14px; font-size: 14px; }
+  .builder-hero p { margin-top: 14px; font-size: 15px; }
   .prompt-composer { border-radius: 17px; }
-  .prompt-composer textarea { min-height: 145px; padding: 18px 17px 10px; font-size: 16px; }
+  .prompt-composer textarea { min-height: 145px; padding: 18px 17px 10px; font-size: 17px; }
   .reference-field { grid-template-columns: 27px minmax(0, 1fr); margin-right: 12px; margin-left: 12px; }
   .reference-field input { grid-column: 2; }
   .devin-mode-picker { margin-right: 12px; margin-left: 12px; }

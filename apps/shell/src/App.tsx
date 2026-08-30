@@ -112,10 +112,48 @@ function StageRoute(props: { mode: Mode; sessionId: string }) {
 
 type GetBySlugResult = { app: ShellApp; version: ShellVersion | null } | null | undefined;
 
+function faviconForApp(name: string): string {
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((word) => word.charAt(0))
+    .join("")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 2) || "✦";
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+    '<defs><linearGradient id="g" x1="7" y1="5" x2="57" y2="59" gradientUnits="userSpaceOnUse">' +
+    '<stop stop-color="#8B82FF"/><stop offset="1" stop-color="#4D3EDB"/></linearGradient></defs>' +
+    '<rect width="64" height="64" rx="18" fill="url(#g)"/>' +
+    `<text x="32" y="39" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="23" font-weight="800">${initials}</text>` +
+    '<circle cx="50" cy="14" r="4" fill="#89E7C0"/></svg>';
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
 function AppRoute(props: { slug: string; mode: Mode; sessionId: string }) {
   const { slug, mode, sessionId } = props;
   const result = useQuery(anyApi.apps.getBySlug, { slug }) as GetBySlugResult;
   const [name, setNameState] = useState(() => getName(sessionId));
+  const appName = result?.app?.name;
+
+  useEffect(() => {
+    if (!appName) return;
+    document.title = appName;
+    let icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (!icon) {
+      icon = document.createElement("link");
+      icon.rel = "icon";
+      document.head.appendChild(icon);
+    }
+    icon.type = "image/svg+xml";
+    icon.href = faviconForApp(appName);
+    return () => {
+      document.title = "Khayaal - AI";
+      icon!.href = "/favicon.svg";
+    };
+  }, [appName]);
 
   const changeName = (next: string) => {
     const clean = persistName(next);

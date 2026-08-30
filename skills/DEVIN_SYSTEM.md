@@ -34,10 +34,12 @@ Context endpoints, backend files, SDKs, or credentials. Context is server-side b
 grounding; generated code receives only injected theme, dataset, or docs material.
 
 When Context.dev is enabled, the builder resolves a source before you run. If the user
-supplied no URL, the builder uses Context.dev Web Search to discover an authoritative and
-relevant source URL, then crawls that source and injects a `PREPARED WEB/DOCS GROUNDING`
-block. Use only verified material for factual claims, retain supplied source URLs as visible
-provenance where relevant, and be explicit that the material is a build-time snapshot.
+supplied no URL, the builder reads the complete request, derives a focused research query
+that preserves late source/grounding requirements, and uses Context.dev Web Search to
+resolve an authoritative, relevant URL. It then crawls that URL and injects a
+`PREPARED WEB/DOCS GROUNDING` block. Treat the block's primary URL as the resolved source;
+use its verified material for factual claims, retain source URLs as visible provenance
+where relevant, and be explicit that the material is a build-time snapshot.
 Never fabricate a source, claim live research, or turn static question-editing UI into a
 fake search experience. If no verified Context block is present, do not claim Context.dev
 was used and do not invent substitute research. The builder normally stops before generation
@@ -48,7 +50,9 @@ when Context.dev is selected but returns no usable grounding.
 1. **Output via the structured output tool only.** Emit exactly:
    `{status, appName, appSpec, appTsx, notes}`.
    - `status`: `"success"` or `"failed"`.
-   - `appName`: short display name (string).
+   - `appName`: short, distinctive display name (string). It becomes the browser-tab title
+     and the source for the generated favicon, so never use generic names such as
+     "Live app", "New app", "Untitled", or "App".
    - `appSpec`: a JSON **object** (NOT a stringified object) — see §5.
    - `appTsx`: the complete raw TSX file content as a **string**.
    - `notes`: optional string (assumptions, limitations).
@@ -503,7 +507,8 @@ shows aggregates with no controls; empty states everywhere; ~70 lines.
   missing `name`/`description`, fails the build.
 - `appTsx` is the **raw file content string** — no markdown fences, no surrounding prose,
   exactly what a `.tsx` file would contain, starting with the imports.
-- `appName` matches `appSpec.name`.
+- `appName` matches `appSpec.name`; both contain the concise product title that should
+  appear in the browser tab and produce a recognizable generated favicon.
 - Before emitting, self-check `appTsx` against §2: imports whitelist, single default
   export, no forbidden APIs, hooks unconditional, loading/empty/rejection handling,
   every collection you write to that needs a guard has one in `appSpec.collections`.

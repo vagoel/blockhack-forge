@@ -224,8 +224,8 @@ function BuildForm() {
           <span />
         </div>
         <div className="builder-hero">
-          <span className="section-kicker">AI product studio</span>
-          <h1 id="builder-heading">Turn an idea into a polished product.</h1>
+          <span className="section-kicker">Khayaal AI</span>
+          <h1 id="builder-heading">Turn an idea into reality</h1>
           <p>
             Describe the site or app, choose its capabilities, then publish it to a shareable URL.
           </p>
@@ -740,7 +740,7 @@ function BuildDetail({ buildId }: { buildId: string }) {
         </div>
         <div className="project-actions">
           <a className="btn" href="#/build">New app</a>
-          {appUrl ? <a className="btn" href={`#/projector/${build.appSlug}`}>Present</a> : null}
+          {appUrl ? <a className="btn" href={`#/projector/${build.appSlug}`} target="_blank" rel="noreferrer">QR code</a> : null}
           {appUrl ? (
             <a className="btn btn-primary" href={deploymentUrl ?? appUrl} target="_blank" rel="noreferrer">
               Open app <span aria-hidden="true">↗</span>

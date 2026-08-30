@@ -1,4 +1,4 @@
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, type MouseEvent, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import QRCode from "react-qr-code";
 import { connectorLabel } from "../connectors";
@@ -66,7 +66,7 @@ export default function GalleryView() {
         <div className="page-state projects-empty">
           <span className="state-glyph">+</span>
           <h2>Your first live app starts with one sentence.</h2>
-          <p>Describe a room experience and Builder will make it shareable.</p>
+          <p>Describe a room experience and Khayaal will make it shareable.</p>
           <a className="btn btn-primary" href="#/build">Create an app</a>
         </div>
       ) : (
@@ -138,10 +138,21 @@ function AppCard({
     }
   }
 
+  function onCardClick(event: MouseEvent<HTMLElement>) {
+    if (!app.buildId) return;
+    const target = event.target;
+    if (
+      target instanceof Element &&
+      target.closest("a, button, input, textarea, select, summary, label")
+    ) return;
+    window.location.hash = `/build/${app.buildId}`;
+  }
+
   return (
     <article
-      className="project-card"
+      className={`project-card${app.buildId ? " project-card-clickable" : ""}`}
       style={{ "--project-hue": hue } as CSSProperties}
+      onClick={onCardClick}
     >
       <a
         className="project-card-preview"
@@ -179,7 +190,7 @@ function AppCard({
           <a className="btn btn-primary" href={appUrl} target="_blank" rel="noreferrer">
             Open app <span aria-hidden="true">↗</span>
           </a>
-          <a className="btn" href={`#/projector/${app.slug}`}>Present</a>
+          <a className="btn" href={`#/projector/${app.slug}`} target="_blank" rel="noreferrer">QR code</a>
           <button className="btn btn-danger" type="button" onClick={onDelete} disabled={busy}>
             Delete
           </button>

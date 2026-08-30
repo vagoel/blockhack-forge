@@ -9,6 +9,7 @@ import { appSpecSchema } from "./lib/appSpec";
 import { appConnectors } from "./lib/connectors";
 import { sourceFingerprint } from "./lib/sourceFingerprint";
 import { devinSessionVisibilityFields } from "./lib/devinSession";
+import { resolveContextSourceUrl } from "./lib/contextSource";
 import {
   devinModeLabel,
   devinModeRequestFields,
@@ -49,7 +50,6 @@ const EXTRACT_SCHEMA = {
   properties: { items: { type: "array", items: { type: "object" } } },
 } as const;
 
-const URL_RE = /https?:\/\/[^\s)"'<>\]]+/;
 const DATA_WORDS_RE = /\b(items?|products?|data|list|listing|catalog|inventory|menu|rows|entries)\b/i;
 const DOCS_WORDS_RE =
   /\b(docs?|documentation|api docs?|sdk docs?|reference guide|according to|based on)\b/i;
@@ -155,8 +155,9 @@ export const start = internalAction({
       }
       const connectors = [...appConnectors(build)];
       const contextEnabled = connectors.includes("context");
-      const detected = contextEnabled ? build.prompt.match(URL_RE)?.[0] ?? null : null;
-      let contextUrl: string | null = contextEnabled ? build.styleUrl ?? detected : null;
+      let contextUrl: string | null = contextEnabled
+        ? resolveContextSourceUrl(build.prompt, build.styleUrl)
+        : null;
       const needsContextDiscovery = contextEnabled && !contextUrl;
       const needsResearchGrounding =
         contextEnabled &&
@@ -176,7 +177,7 @@ export const start = internalAction({
 
       if (needsContextDiscovery) {
         const discovered = await ctx.runAction(internal.contextdev.discover, {
-          query: build.prompt.slice(0, 500),
+          query: build.prompt,
         });
         if (!discovered?.url || !discovered?.grounding) {
           throw new Error(

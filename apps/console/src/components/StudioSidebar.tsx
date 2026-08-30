@@ -2,6 +2,7 @@ import { useQuery } from "convex/react";
 import type { CompileWorkerStatus } from "../compileWorker";
 import { api, SHELL_URL } from "../convexClient";
 import { useOperatorKey } from "../operator";
+import BrandMark from "./BrandMark";
 
 type ActiveView = "build" | "gallery";
 
@@ -36,15 +37,11 @@ export default function StudioSidebar({
 
   return (
     <aside className="studio-sidebar">
-      <a className="studio-brand" href="#/build" aria-label="Builder home">
-        <span className="brand-mark" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </span>
+      <a className="studio-brand" href="#/build" aria-label="Khayaal - AI home">
+        <BrandMark />
         <span>
-          <strong>Builder</strong>
-          <small>Live app studio</small>
+          <strong>Khayaal - AI</strong>
+          <small>Turn an idea into reality</small>
         </span>
       </a>
 

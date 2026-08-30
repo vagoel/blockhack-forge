@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="khayaal" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8B82FF" />
+      <stop offset="1" stop-color="#4D3EDB" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#khayaal)" />
+  <path d="M32 11c1.8 9.7 7.3 15.2 17 17-9.7 1.8-15.2 7.3-17 17-1.8-9.7-7.3-15.2-17-17 9.7-1.8 15.2-7.3 17-17Z" fill="white" />
+  <circle cx="48" cy="14" r="4" fill="#89E7C0" />
+</svg>

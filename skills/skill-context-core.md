@@ -21,6 +21,13 @@ Today the builder may prepare three things before generation:
   `appSpec.dataset` names the supplied dataset;
 - bounded documentation/web grounding included in the generation prompt.
 
+When Context is enabled, the builder resolves the source before generation. An explicit
+reference URL wins. Without one, the builder reads the complete user request, extracts a
+focused research query (including source requirements near the end), uses Context.dev Web
+Search to resolve an authoritative URL, and crawls that URL. A `VERIFIED` connector block
+and `PREPARED WEB/DOCS GROUNDING` identify successful output and include the resolved
+primary URL. Use that URL and grounded content; do not attempt to resolve a different URL.
+
 There is **no generated-app Context client, fetch permission, key, arbitrary URL tool,
 parser, browser action, or monitor API**. Never import its SDK, call an endpoint, invent
 a hook, expose credentials, or claim post-publish refresh. For unsupported runtime
@@ -66,10 +73,12 @@ These server capabilities are not callable from generated TSX:
 
 ## Generation checklist
 
-1. Use only resources explicitly supplied; a URL in prose was not necessarily fetched.
+1. Use only resources marked verified by the builder. The primary URL in prepared Context
+   grounding was resolved and fetched; an unrelated URL appearing only in prose was not.
 2. Preserve provenance in headings or short source labels, but do not render links:
    navigation elements are forbidden by the sandbox.
 3. Never describe prepared content as live; say “prepared from” when freshness matters.
 4. Keep theme, dataset, and grounded text separate. Brand colors do not validate data;
    extracted rows do not authorize claims found in page copy.
-5. If no usable resource arrived, fall back and disclose it in `notes`; do not fabricate.
+5. If no verified resource arrived, do not claim Context usage or fabricate a fallback.
+   The builder normally stops before generation when selected Context grounding fails.

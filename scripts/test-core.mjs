@@ -466,7 +466,47 @@ try {
   assert.match(ungroundedContextPrompt, /NO VERIFIED OUTPUT WAS RETURNED/);
   assert.match(ungroundedContextPrompt, /do not invent substitute research/);
 
-  const { selectResearchSource } = await load("convex/contextdev.ts", "contextdev");
+  const { buildContextDiscoveryQuery, selectResearchSource } = await load(
+    "convex/contextdev.ts",
+    "contextdev",
+  );
+  const fullDiscoveryPrompt = [
+    'Build a live "Sufra Circle" app for a community Iftar meal program.',
+    "Volunteers scan a QR code and claim delivery routes in realtime.",
+    "Surplus meals can be posted and claimed with the remaining count ticking down.",
+    "Ground the branding, name, and delivery zone information from [insert mosque/charity URL here].",
+  ].join(" ");
+  const contextDiscoveryQuery = buildContextDiscoveryQuery(fullDiscoveryPrompt);
+  assert.ok(contextDiscoveryQuery.length <= 430);
+  assert.match(contextDiscoveryQuery, /community Iftar meal program/i);
+  assert.match(contextDiscoveryQuery, /mosque\/charity source/i);
+  assert.match(contextDiscoveryQuery, /delivery routes/i);
+  assert.doesNotMatch(contextDiscoveryQuery, /insert|here|Context\.dev/i);
+  const lateSourceQuery = buildContextDiscoveryQuery(
+    `${"Describe realtime workflow behavior without a sentence boundary ".repeat(12)}. ` +
+      "Ground the result from the official Dubai charity website.",
+  );
+  assert.ok(lateSourceQuery.length <= 430);
+  assert.match(lateSourceQuery, /official Dubai charity website/i);
+
+  const { resolveContextSourceUrl } = await load(
+    "convex/lib/contextSource.ts",
+    "context-source",
+  );
+  assert.equal(
+    resolveContextSourceUrl(
+      "Use Context.dev POST https://api.context.dev/v1/web/extract, then ground the app from https://web.khda.gov.ae/en/education.",
+    ),
+    "https://web.khda.gov.ae/en/education",
+  );
+  assert.equal(
+    resolveContextSourceUrl("Call https://api.context.dev/v1/web/extract for data."),
+    null,
+  );
+  assert.equal(
+    resolveContextSourceUrl("Build anything", "https://example.org/reference"),
+    "https://example.org/reference",
+  );
   const selectedResearchSource = selectResearchSource([
     {
       url: "https://reddit.com/r/example",
@@ -502,6 +542,7 @@ try {
   assert.match(inlinePrompt, /Decide the product archetype first/);
   assert.match(inlinePrompt, /Visual and product quality bar/);
   assert.match(inlinePrompt, /connectorsUsed/);
+  assert.match(inlinePrompt, /browser title and favicon/);
   assert.match(inlinePrompt, /SKILL: site-builder/);
   assert.doesNotMatch(inlinePrompt, /mid-section|INLINE_SYSTEM_CAP/);
 

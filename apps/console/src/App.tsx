@@ -4,6 +4,7 @@ import BuildView from "./views/BuildView";
 import GalleryView from "./views/GalleryView";
 import ProjectorView from "./views/ProjectorView";
 import StudioSidebar from "./components/StudioSidebar";
+import BrandMark from "./components/BrandMark";
 
 type Route =
   | { view: "build"; buildId: string | null }
@@ -53,8 +54,8 @@ function ConsoleApp() {
       <div className="studio-workspace">
         <header className="mobile-studio-bar">
           <a className="mobile-brand" href="#/build">
-            <span className="brand-mark" aria-hidden="true"><span /><span /><span /></span>
-            <strong>Builder</strong>
+            <BrandMark />
+            <strong>Khayaal - AI</strong>
           </a>
           <nav aria-label="Mobile studio navigation">
             <a className={route.view === "build" ? "is-active" : ""} href="#/build">Create</a>

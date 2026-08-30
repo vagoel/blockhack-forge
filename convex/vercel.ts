@@ -121,6 +121,34 @@ function jsonForScript(value: unknown): string {
   return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
+function htmlEscape(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function faviconForApp(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const initials = words
+    .slice(0, 2)
+    .map((word) => word.charAt(0))
+    .join("")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 2) || "✦";
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+    '<defs><linearGradient id="g" x1="7" y1="5" x2="57" y2="59" gradientUnits="userSpaceOnUse">' +
+    '<stop stop-color="#8B82FF"/><stop offset="1" stop-color="#4D3EDB"/></linearGradient></defs>' +
+    '<rect width="64" height="64" rx="18" fill="url(#g)"/>' +
+    `<text x="32" y="39" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="23" font-weight="800">${initials}</text>` +
+    '<circle cx="50" cy="14" r="4" fill="#89E7C0"/></svg>';
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
 function originOrNull(value: unknown): string | null {
   if (typeof value !== "string") return null;
   try {
@@ -137,6 +165,9 @@ function standaloneHtml(payload: any): string {
   const theme = payload.app.theme && typeof payload.app.theme === "object" ? payload.app.theme : null;
   const logo = originOrNull(theme?.logoUrl);
   const connectors = [...appConnectors(payload.version)];
+  const appTitle = String(payload.app.name || payload.app.slug || "App");
+  const escapedAppTitle = htmlEscape(appTitle);
+  const favicon = faviconForApp(appTitle);
   const config = {
     appId: String(payload.app._id),
     slug: payload.app.slug,
@@ -185,9 +216,10 @@ function standaloneHtml(payload: any): string {
     '<meta name="viewport" content="width=device-width, initial-scale=1">' +
     '<meta name="referrer" content="no-referrer">' +
     `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; frame-src 'self'; child-src 'self'; connect-src ${connectSources}; img-src ${imageSources}; font-src data:; base-uri 'none'; object-src 'none'; form-action 'none'">` +
-    "<title>Live app</title>" +
+    `<link rel="icon" href="${favicon}" type="image/svg+xml">` +
+    `<title>${escapedAppTitle}</title>` +
     "<style>html,body,#app{width:100%;height:100%;margin:0;border:0;background:#0b0d14}#app{position:fixed;inset:0}</style>" +
-    "</head><body><iframe id=\"app\" title=\"Live app\" sandbox=\"allow-scripts\"></iframe>" +
+    `</head><body><iframe id="app" title="${escapedAppTitle}" sandbox="allow-scripts"></iframe>` +
     `<script>${scriptSafe(hostScript)}</script></body></html>`
   );
 }

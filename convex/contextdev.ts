@@ -385,6 +385,67 @@ function normalizedHttpUrl(value: unknown): string | null {
   }
 }
 
+const DISCOVERY_QUERY_LIMIT = 430;
+const SOURCE_INTENT_RE =
+  /\b(source|reference|ground|grounding|brand|style|research|official|website|url|data|docs?|documentation|information|provenance)\b/i;
+
+function cleanDiscoverySentence(value: string): string {
+  return value
+    .replace(
+      /\[(?:insert\s+)?([^\]]+?)(?:\s+here)?\]/gi,
+      (_match, contents: string) => contents.replace(/\burl\b/gi, "source"),
+    )
+    .replace(/https?:\/\/\S+/gi, " ")
+    .replace(
+      /^build\s+(?:(?:a|an|the)\s+)?(?:(?:live|polished|responsive|modern|realtime|real-time|new|simple)\s+)*(?:"[^"]+"\s+)?(?:web\s+)?(?:app|website|tool|dashboard|directory|site)\s*(?:for|about|that)?\s*/i,
+      "",
+    )
+    .replace(/\b(?:use|using|enable)\s+context\.dev\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function appendWithinLimit(parts: string[], value: string, valueLimit = DISCOVERY_QUERY_LIMIT): void {
+  if (!value || parts.includes(value)) return;
+  const bounded = value.length > valueLimit
+    ? value.slice(0, valueLimit).replace(/\s+\S*$/, "").trim()
+    : value;
+  const used = parts.join(" ").length + (parts.length > 0 ? 1 : 0);
+  const remaining = DISCOVERY_QUERY_LIMIT - used;
+  if (remaining <= 0) return;
+  if (bounded.length <= remaining) {
+    parts.push(bounded);
+    return;
+  }
+  const clipped = bounded.slice(0, remaining).replace(/\s+\S*$/, "").trim();
+  if (clipped.length >= 24) parts.push(clipped);
+}
+
+/** Build a focused Context.dev query from the complete request instead of truncating its start. */
+export function buildContextDiscoveryQuery(prompt: string): string {
+  const normalized = prompt.replace(/\r/g, "\n").replace(/\n+/g, ". ").trim();
+  const sentences = normalized
+    .split(/(?<=[.!?])\s+/)
+    .map(cleanDiscoverySentence)
+    .filter(Boolean);
+  if (sentences.length === 0) return "official authoritative source";
+
+  const identity = sentences[0];
+  const prioritized = sentences
+    .slice(1)
+    .map((sentence, index) => ({
+      sentence,
+      index,
+      score: SOURCE_INTENT_RE.test(sentence) ? 100 : 0,
+    }))
+    .sort((a, b) => b.score - a.score || a.index - b.index);
+  const parts: string[] = [];
+  // Reserve room for source instructions that may occur near the end of a long request.
+  appendWithinLimit(parts, identity, 180);
+  for (const candidate of prioritized) appendWithinLimit(parts, candidate.sentence);
+  return parts.join(" ").slice(0, DISCOVERY_QUERY_LIMIT).trim();
+}
+
 /** Prefer authoritative, scrapeable results while retaining Context.dev's relevance order. */
 export function selectResearchSource(results: unknown): ResearchSource | null {
   if (!Array.isArray(results)) return null;
@@ -452,8 +513,9 @@ export const discover = internalAction({
   returns: v.any(),
   handler: async (ctx, { query }): Promise<{ url: string; grounding: string } | null> => {
     return await withContextLease(ctx, async () => {
+      const discoveryQuery = buildContextDiscoveryQuery(query);
       const body = await post("/web/search", {
-        query: `${query.slice(0, 430)} official authoritative source`,
+        query: `${discoveryQuery} official authoritative source`.slice(0, 500),
         numResults: 10,
         queryFanout: true,
         excludeDomains: [...LOW_TRUST_RESEARCH_HOSTS],

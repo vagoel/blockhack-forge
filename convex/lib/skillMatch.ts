@@ -22,7 +22,8 @@ const MAX_DOMAIN_SKILLS = 4;
 
 // Devin rejects prompts >= 30000 chars; retain 2.5k of transport headroom.
 const MAX_PROMPT_CHARS = 27500;
-const PRIMARY_SKILL_CAP = 6500;
+// Leave a little room for system-contract growth without squeezing out grounding blocks.
+const PRIMARY_SKILL_CAP = 6400;
 const CORE_SKILL_CAP = 1200;
 const OPINIONATED_UI_SKILL_CAP = 1800;
 const ADMIN_CONTROLS_SKILL_CAP = 1500;
@@ -163,40 +164,6 @@ export function composeDevinPrompt(opts: {
     budget -= block.length;
   }
 
-  const hasResources = Boolean(
-    opts.brandTheme ||
-      (opts.datasetSample && opts.datasetSample.length > 0) ||
-      opts.docsGrounding ||
-      opts.styleGrounding
-  );
-  let primaryAdded = false;
-  if (primary && budget > 0) {
-    const useFull = !hasResources;
-    const body = useFull ? cap(primary.content, PRIMARY_SKILL_CAP) : condense(primary.content);
-    const block = `\n\n=== SKILL: ${primary.name} (primary — ${useFull ? "full" : "condensed"}) ===\n${body}`;
-    if (block.length <= budget) {
-      blocks.push(block);
-      budget -= block.length;
-      primaryAdded = true;
-    }
-  }
-
-  // Defensive fallback: a future larger system/core set must not silently erase the
-  // only domain skill. Include as much of its non-reference guidance as will fit.
-  if (primary && !primaryAdded) {
-    const header = `\n\n=== SKILL: ${primary.name} (primary — condensed) ===\n`;
-    if (budget <= header.length + 200) {
-      throw new Error(`Devin prompt contract leaves no room for primary skill ${primary.name}`);
-    }
-    const block = header + cap(
-      primary.content.split(REFERENCE_SPLIT_RE)[0].trim(),
-      Math.min(CONDENSED_SKILL_CAP, budget - header.length)
-    );
-    blocks.push(block);
-    budget -= block.length;
-    primaryAdded = true;
-  }
-
   const resourceCandidates: Array<{
     header: string;
     body: string;
@@ -236,10 +203,53 @@ export function composeDevinPrompt(opts: {
     });
   }
 
+  // Reserve a useful excerpt for every supplied resource before spending the
+  // remainder on a domain skill. Otherwise a growing system contract can make
+  // the first resource disappear at the minimum-body threshold.
+  const MIN_RESOURCE_BODY = 200;
+  const resourceReserve = resourceCandidates.reduce(
+    (sum, candidate) =>
+      sum + candidate.header.length + (candidate.footer?.length ?? 0) + MIN_RESOURCE_BODY,
+    0
+  );
+  const hasResources = resourceCandidates.length > 0;
+  let primaryAdded = false;
+  if (primary && budget > 0) {
+    const useFull = !hasResources;
+    const header = `\n\n=== SKILL: ${primary.name} (primary — ${useFull ? "full" : "condensed"}) ===\n`;
+    const available = Math.max(0, budget - resourceReserve - header.length);
+    const source = useFull
+      ? primary.content
+      : primary.content.split(REFERENCE_SPLIT_RE)[0].trim();
+    const desiredCap = useFull ? PRIMARY_SKILL_CAP : CONDENSED_SKILL_CAP;
+    const block = header + cap(source, Math.min(desiredCap, available), "\n…");
+    if (available >= 200 && block.length <= budget - resourceReserve) {
+      blocks.push(block);
+      budget -= block.length;
+      primaryAdded = true;
+    }
+  }
+
+  // Defensive fallback: a future larger system/core set must not silently erase the
+  // only domain skill. Include as much of its non-reference guidance as will fit.
+  if (primary && !primaryAdded) {
+    const header = `\n\n=== SKILL: ${primary.name} (primary — condensed) ===\n`;
+    const available = budget - resourceReserve - header.length;
+    if (available < 200) {
+      throw new Error(`Devin prompt contract leaves no room for primary skill ${primary.name}`);
+    }
+    const block = header + cap(
+      primary.content.split(REFERENCE_SPLIT_RE)[0].trim(),
+      Math.min(CONDENSED_SKILL_CAP, available)
+    );
+    blocks.push(block);
+    budget -= block.length;
+    primaryAdded = true;
+  }
+
   // Keep every supplied resource represented even in a worst-case prompt.
   // A short grounded excerpt is better than silently dropping its entire
   // theme/dataset/docs block after core contract guidance grows.
-  const MIN_RESOURCE_BODY = 200;
   for (let index = 0; index < resourceCandidates.length; index++) {
     const resource = resourceCandidates[index];
     const later = resourceCandidates.slice(index + 1);
