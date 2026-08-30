@@ -5,13 +5,12 @@
   "type": "module",
   "packageManager": "pnpm@10.28.0",
   "scripts": {
-    "dev": "concurrently -n convex,console,shell,vendor \"npx convex dev\" \"pnpm --filter console dev\" \"pnpm --filter shell dev\" \"node scripts/build-vendor.mjs --watch\"",
-    "convex": "npx convex dev",
+    "dev": "concurrently -n console,shell,vendor \"pnpm --filter console dev\" \"pnpm --filter shell dev\" \"node scripts/build-vendor.mjs --watch\"",
     "skills:sync": "node scripts/build-skills.mjs",
     "vendor": "node scripts/build-vendor.mjs",
     "compile": "node scripts/compile-pending.mjs",
     "verify:live": "node scripts/verify-live.mjs",
-    "test": "node scripts/test-core.mjs",
+    "test": "node scripts/test-local-dev.mjs && node scripts/test-core.mjs",
     "typecheck": "tsc -p convex && pnpm --filter console typecheck && pnpm --filter shell typecheck"
   },
   "dependencies": {
