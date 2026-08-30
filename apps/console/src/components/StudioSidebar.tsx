@@ -38,11 +38,11 @@ export default function StudioSidebar({
   return (
     <aside className="studio-sidebar">
       <a className="studio-brand" href="#/build" aria-label="Khayaal - AI home">
-        <BrandMark />
-        <span>
+        <span className="studio-brand-main">
+          <BrandMark />
           <strong>Khayaal - AI</strong>
-          <small>Turn an idea into reality</small>
         </span>
+        <small>Turn an idea into reality</small>
       </a>
 
       <nav className="studio-nav" aria-label="Studio navigation">

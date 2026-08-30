@@ -224,8 +224,7 @@ function BuildForm() {
           <span />
         </div>
         <div className="builder-hero">
-          <span className="section-kicker">Khayaal AI</span>
-          <h1 id="builder-heading">Turn an idea into reality</h1>
+          <h1 id="builder-heading">Create a new app</h1>
           <p>
             Describe the site or app, choose its capabilities, then publish it to a shareable URL.
           </p>

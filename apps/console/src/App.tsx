@@ -55,7 +55,10 @@ function ConsoleApp() {
         <header className="mobile-studio-bar">
           <a className="mobile-brand" href="#/build">
             <BrandMark />
-            <strong>Khayaal - AI</strong>
+            <span>
+              <strong>Khayaal - AI</strong>
+              <small>Turn an idea into reality</small>
+            </span>
           </a>
           <nav aria-label="Mobile studio navigation">
             <a className={route.view === "build" ? "is-active" : ""} href="#/build">Create</a>
