@@ -19,3 +19,7 @@ build/
 .env*
 
 .playwright-mcp
+
+# Presentation build artifacts
+presentation/screenshots/
+presentation/output.pdf

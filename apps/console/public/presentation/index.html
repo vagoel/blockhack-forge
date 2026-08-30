@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Khayaal AI</title>
+
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <section id="title" class="section-divider" data-state="is-section-divider" data-transition="zoom">
+        <span class="spark spark-1"></span>
+        <span class="spark spark-2"></span>
+        <span class="spark spark-3"></span>
+        <span class="spark spark-4"></span>
+        <p class="arabic">خيال</p>
+        <h1 class="gradient-text" style="font-size: 72pt; margin: 6px 0 0 0;">Khayaal AI</h1>
+        <p class="text-xl" style="margin-top: 14px;"><em>Khayaal</em> — Arabic for <strong style="color: #f2b263;">imagination</strong></p>
+        <p class="text-lg fragment fade-in" style="margin-top: 26px;">Describe it. <strong style="color:#ef6351;">Devin</strong> builds it. The room plays it — <strong style="color:#35d0b8;">live</strong>.</p>
+        <div style="margin-top: 46px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+          <p class="text-uppercase" style="font-size: 11pt; color: var(--muted-color); margin: 0;">Team 404 NOT FOUND</p>
+          <p style="font-size: 13pt; margin: 0;">Varun · Vaibhav Patel · Huda · Nimra Ahmed</p>
+        </div>
+      </section>
+
+      <section id="problem">
+        <p class="kicker">The problem</p>
+        <h2>An idea dies waiting for a team to build it</h2>
+        <div class="content" style="justify-content: center;">
+          <p class="text-xl" style="max-width: 900px;">A live, multi-user app needs a backend, a database, realtime sync, design, and a deployment pipeline. By the time it ships, the moment is gone.</p>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 40px;">
+            <div class="panel stat fragment rise">
+              <p class="stat-num" style="color: #ef6351;">Days</p>
+              <p class="stat-label">to wire backend + realtime sync by hand</p>
+            </div>
+            <div class="panel stat fragment rise">
+              <p class="stat-num" style="color: #f2b263;">5+</p>
+              <p class="stat-label">tools to design, host, deploy, and share</p>
+            </div>
+            <div class="panel stat fragment rise">
+              <p class="stat-num" style="color: #7567e8;">0</p>
+              <p class="stat-label">apps shipped by non-developers with an idea</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="product" data-transition="slide-in fade-out">
+        <p class="kicker">The product</p>
+        <h2>Type a sentence. Get a live app with a URL.</h2>
+        <div class="content" style="justify-content: center;">
+          <div class="composer">
+            <p class="typed">“Build a live quiz night app with a leaderboard for our Dubai meetup…”<span class="caret"></span></p>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 22px; flex-wrap: wrap; gap: 14px;">
+              <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <span class="chip fragment fade-in" style="--chip-color: #ef6351;">Convex · Realtime</span>
+                <span class="chip fragment fade-in" style="--chip-color: #159b88;">Context · Grounding</span>
+                <span class="chip fragment fade-in" style="--chip-color: #7567e8;">Intelligence · AI</span>
+                <span class="chip fragment fade-in" style="--chip-color: #9aa0b4;">Vercel · Delivery</span>
+              </div>
+              <p class="build-btn fragment fade-up">Build app <span aria-hidden="true">→</span></p>
+            </div>
+          </div>
+          <div class="fragment rise" style="display: flex; align-items: center; gap: 18px; margin-top: 34px; justify-content: center;">
+            <p class="url-pill"><i class="fa-solid fa-circle-check"></i> khayaal.app/quiz-night <i class="fa-solid fa-qrcode" style="color:#f2b263;"></i></p>
+            <p class="text-lg" style="margin: 0;">Live in <strong style="color:#35d0b8;">minutes</strong> — scan &amp; play from any phone</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="pipeline">
+        <p class="kicker">How it works</p>
+        <h2>From imagination to production in five moves</h2>
+        <div class="content" style="justify-content: center;">
+          <div style="display: grid; grid-template-columns: 1fr 34px 1fr 34px 1fr 34px 1fr 34px 1fr; gap: 6px; align-items: stretch;">
+            <div class="pipe-step fragment rise" style="--step-color: #f2b263;">
+              <p class="pipe-num">1</p>
+              <h4>Prompt</h4>
+              <p>Describe the app, pick its capabilities</p>
+            </div>
+            <p class="pipe-arrow fragment fade-in">→</p>
+            <div class="pipe-step fragment rise" style="--step-color: #159b88;">
+              <p class="pipe-num">2</p>
+              <h4>Ground</h4>
+              <p>Context.dev pulls brand style &amp; data from any URL</p>
+            </div>
+            <p class="pipe-arrow fragment fade-in">→</p>
+            <div class="pipe-step fragment rise" style="--step-color: #7567e8;">
+              <p class="pipe-num">3</p>
+              <h4>Generate</h4>
+              <p>Devin writes the complete app, guided by 100+ skills</p>
+            </div>
+            <p class="pipe-arrow fragment fade-in">→</p>
+            <div class="pipe-step fragment rise" style="--step-color: #ef6351;">
+              <p class="pipe-num">4</p>
+              <h4>Compile</h4>
+              <p>Code compiles in the browser tab — no build server</p>
+            </div>
+            <p class="pipe-arrow fragment fade-in">→</p>
+            <div class="pipe-step fragment rise" style="--step-color: #35d0b8;">
+              <p class="pipe-num">5</p>
+              <h4>Go live</h4>
+              <p>QR code + public Vercel URL, ready to share</p>
+            </div>
+          </div>
+          <blockquote class="fragment fade-in text-lg" style="margin-top: 44px;">
+            No servers of our own — Convex orchestrates the whole build and stores every app.
+          </blockquote>
+        </div>
+      </section>
+
+      <section id="realtime">
+        <p class="kicker">Multi-user, live</p>
+        <h2>One QR code. A room full of phones, in sync.</h2>
+        <div class="content" style="justify-content: center;">
+          <div style="display: flex; justify-content: center; align-items: center; gap: 0;">
+            <div class="phone phone-float-1 fragment rise">
+              <div class="presence"><span></span><span></span><span></span></div>
+              <p class="score"></p>
+              <div class="bar"></div>
+              <p class="sync-label">Player 1</p>
+            </div>
+            <div class="sync-wave fragment fade-in"></div>
+            <div class="phone phone-float-2 fragment rise">
+              <div class="presence"><span></span><span></span><span></span></div>
+              <p class="score"></p>
+              <div class="bar"></div>
+              <p class="sync-label">Player 2</p>
+            </div>
+            <div class="sync-wave fragment fade-in"></div>
+            <div class="phone phone-float-3 fragment rise">
+              <div class="presence"><span></span><span></span><span></span></div>
+              <p class="score"></p>
+              <div class="bar"></div>
+              <p class="sync-label">Player 3</p>
+            </div>
+          </div>
+          <div class="fragment fade-up" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 36px;">
+            <p class="text-lg" style="margin: 0;"><i class="fa-solid fa-bolt" style="color:#ef6351;"></i>&nbsp; Scores, votes, presence &amp; timers flow through <strong>Convex realtime</strong> — no refresh, ever.</p>
+            <p class="text-lg" style="margin: 0;"><i class="fa-solid fa-rotate" style="color:#35d0b8;"></i>&nbsp; Ship an update and every open phone <strong>hot-swaps instantly</strong>.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="speed" style="display: flex; flex-direction: column; height: 100%;">
+        <p class="kicker">Why it matters</p>
+        <h2>Idea → live multi-user app, in minutes not days</h2>
+        <div style="flex: 1; display: grid; grid-template-columns: 1fr 2fr; gap: 30px; min-height: 0; min-width: 0; padding-top: 24px;">
+          <div class="panel" style="display: flex; flex-direction: column; justify-content: center;">
+            <p class="stat-num gradient-text" style="font-family: var(--heading-font); font-weight: 700; font-size: 44pt; margin: 0;">100×</p>
+            <p class="text-lg" style="margin-top: 10px;">faster from idea to a shareable, realtime product</p>
+            <p class="text-muted" style="margin-top: 14px; font-size: 12pt;">Hours of setup collapse into one prompt — backend, sync, design, and deploy included.</p>
+          </div>
+          <div style="position: relative; min-height: 0; min-width: 0;">
+            <canvas data-chart="bar">
+            <!--
+            {
+              "data": {
+                "labels": ["Backend + DB", "Realtime sync", "UI + design", "Deploy + share"],
+                "datasets": [
+                  {
+                    "label": "Hand-built (hours)",
+                    "data": [16, 12, 10, 4],
+                    "backgroundColor": "rgba(154, 160, 180, 0.55)",
+                    "borderRadius": 6
+                  },
+                  {
+                    "label": "Khayaal AI (hours)",
+                    "data": [0.05, 0.05, 0.08, 0.03],
+                    "backgroundColor": "#ef6351",
+                    "borderRadius": 6
+                  }
+                ]
+              },
+              "options": {
+                "maintainAspectRatio": false,
+                "plugins": { "legend": { "position": "bottom", "labels": { "color": "#f4f2ee" } } },
+                "scales": {
+                  "y": { "beginAtZero": true, "ticks": { "color": "#9aa0b4" }, "grid": { "color": "rgba(42,46,61,0.8)" }, "title": { "display": true, "text": "Hours of work", "color": "#9aa0b4" } },
+                  "x": { "ticks": { "color": "#f4f2ee" }, "grid": { "display": false } }
+                }
+              }
+            }
+            -->
+            </canvas>
+          </div>
+        </div>
+      </section>
+
+      <section id="partners">
+        <p class="kicker">Deep partner integration</p>
+        <h2 style="font-size: 30pt;">Devin builds it · Convex runs it · Context.dev feeds it</h2>
+        <div class="content" style="justify-content: center;">
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px;">
+            <div class="partner-card fragment rise" style="--card-color: #7567e8;">
+              <div class="partner-icon"><i class="fa-solid fa-robot"></i></div>
+              <p class="partner-role">The engine</p>
+              <h3>Devin</h3>
+              <p>Not our dev tool — our product's engine.</p>
+              <ul>
+                <li>Every app is written by a Devin API session</li>
+                <li>Prompt composed from a 100+ skill library</li>
+                <li>Devin Cloud modes selectable per build</li>
+              </ul>
+            </div>
+            <div class="partner-card fragment rise" style="--card-color: #ef6351;">
+              <div class="partner-icon"><i class="fa-solid fa-database"></i></div>
+              <p class="partner-role">The backbone</p>
+              <h3>Convex</h3>
+              <p>The entire backend — we run zero servers.</p>
+              <ul>
+                <li>Build pipeline orchestration &amp; storage</li>
+                <li>Realtime presence, scores, timers</li>
+                <li>Instant hot-swap to every device</li>
+              </ul>
+            </div>
+            <div class="partner-card fragment rise" style="--card-color: #159b88;">
+              <div class="partner-icon"><i class="fa-solid fa-globe"></i></div>
+              <p class="partner-role">The senses</p>
+              <h3>Context.dev</h3>
+              <p>Grounds every build in the real web.</p>
+              <ul>
+                <li>Brand colors, fonts &amp; style from any URL</li>
+                <li>Live data &amp; docs extracted for the app</li>
+                <li>On-brand results, zero scraping code</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="demo" class="section-divider" data-state="is-section-divider" data-transition="zoom">
+        <p class="kicker">Live demo</p>
+        <h1 style="font-size: 48pt;">Let's build one <span class="gradient-text">right now</span></h1>
+        <div style="display: flex; align-items: center; gap: 60px; margin-top: 40px;">
+          <div class="qr" aria-hidden="true">
+            <span></span><span class="off"></span><span></span><span></span><span class="off"></span><span></span><span></span><span class="off"></span><span></span>
+            <span></span><span></span><span class="off"></span><span></span><span></span><span class="off"></span><span></span><span></span><span class="off"></span>
+            <span class="off"></span><span></span><span></span><span class="off"></span><span></span><span></span><span class="off"></span><span></span><span></span>
+            <span></span><span class="off"></span><span></span><span></span><span class="off"></span><span></span><span></span><span class="off"></span><span></span>
+            <span></span><span></span><span class="off"></span><span></span><span></span><span></span><span class="off"></span><span></span><span class="off"></span>
+            <span class="off"></span><span></span><span></span><span class="off"></span><span></span><span class="off"></span><span></span><span></span><span></span>
+            <span></span><span class="off"></span><span></span><span></span><span class="off"></span><span></span><span></span><span class="off"></span><span></span>
+            <span></span><span></span><span class="off"></span><span></span><span></span><span class="off"></span><span></span><span></span><span class="off"></span>
+            <span class="off"></span><span></span><span></span><span class="off"></span><span></span><span></span><span class="off"></span><span></span><span></span>
+          </div>
+          <div style="text-align: left;">
+            <p class="text-2xl" style="margin: 0 0 18px 0;">Watch a prompt become<br>a live multiplayer app.</p>
+            <p class="url-pill"><i class="fa-solid fa-globe"></i> blockhack-forge-console.vercel.app</p>
+            <p class="text-lg fragment fade-in" style="margin-top: 20px; color: var(--muted-color);">Pull out your phone — you're the demo.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="impact" class="section-divider" data-state="is-section-divider" data-transition="fade">
+        <span class="spark spark-1"></span>
+        <span class="spark spark-2"></span>
+        <span class="spark spark-3"></span>
+        <span class="spark spark-4"></span>
+        <p class="kicker">Impact</p>
+        <h1 style="font-size: 44pt; max-width: 1000px;">Anyone with <span class="gradient-text">imagination</span> can now ship a live app before their coffee cools</h1>
+        <p class="text-xl fragment fade-in" style="margin-top: 28px; max-width: 860px;">Teachers, event hosts, founders, communities — no code, no servers, no wait.</p>
+        <div class="fragment fade-up" style="margin-top: 44px; display: flex; gap: 16px; align-items: center;">
+          <p class="arabic" style="font-size: 26pt !important; margin: 0;">خيال</p>
+          <p class="text-lg" style="margin: 0;"><strong>Khayaal AI</strong> · Team 404 NOT FOUND · github.com/blockhack-forge</p>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js-plugins@latest/chart/plugin.js"></script>
+  <script>
+    Reveal.initialize({
+      width: 1280,
+      height: 720,
+      margin: 0,
+      controls: true,
+      progress: true,
+      slideNumber: false,
+      hash: true,
+      transition: 'slide',
+      center: false,
+      plugins: [ RevealChart ],
+      chart: {
+        defaults: Object.assign({
+          color: 'rgba(244, 242, 238, 0.85)',
+          borderColor: 'rgba(154, 160, 180, 0.6)',
+          devicePixelRatio: 2
+        }, window.location.search.includes('export') ? { animation: false } : {})
+      }
+    });
+  </script>
+</body>
+</html>
