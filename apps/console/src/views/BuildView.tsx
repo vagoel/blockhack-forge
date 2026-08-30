@@ -136,6 +136,14 @@ const DEVIN_MODES: ReadonlyArray<{
   },
 ] as const;
 
+function hasAdminFlag(): boolean {
+  try {
+    return window.localStorage.getItem("admin") === "true";
+  } catch {
+    return false;
+  }
+}
+
 export default function BuildView({ buildId }: { buildId: string | null }) {
   return buildId ? <BuildDetail buildId={buildId} /> : <BuildForm />;
 }
@@ -625,6 +633,7 @@ function BuildDetail({ buildId }: { buildId: string }) {
   const [replyNote, setReplyNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [previewDevice, setPreviewDevice] = useState<PreviewDevice>("tablet");
   const [celebrating, setCelebrating] = useState(false);
+  const showSessionLinks = hasAdminFlag();
   const previousPipelineStatus = useRef<string | null>(null);
   const celebrated = useRef(false);
   const conversationThread = useRef<HTMLDivElement | null>(null);
@@ -757,6 +766,11 @@ function BuildDetail({ buildId }: { buildId: string }) {
               <h2>{replySessionState.label}</h2>
               <p>{replySessionState.detail}</p>
             </div>
+            {showSessionLinks && replySession.url ? (
+              <a className="agent-session-link" href={replySession.url} target="_blank" rel="noreferrer">
+                Open session ↗
+              </a>
+            ) : null}
           </div>
           {conversation.length > 0 ? (
             <div
@@ -886,7 +900,14 @@ function BuildDetail({ buildId }: { buildId: string }) {
                   <span>{session.acus === undefined ? "ACU metering pending" : `${session.acus} ACUs`}</span>
                   {session.prUrl ? (
                     <div className="session-links">
+                      {showSessionLinks && session.url ? (
+                        <a href={session.url} target="_blank" rel="noreferrer">Session ↗</a>
+                      ) : null}
                       <a href={session.prUrl} target="_blank" rel="noreferrer">PR ↗</a>
+                    </div>
+                  ) : showSessionLinks && session.url ? (
+                    <div className="session-links">
+                      <a href={session.url} target="_blank" rel="noreferrer">Session ↗</a>
                     </div>
                   ) : null}
                 </div>;
