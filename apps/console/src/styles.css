@@ -1635,6 +1635,15 @@ code {
   pointer-events: none;
 }
 
+.build-fireworks::before {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 42%, rgba(124, 112, 255, .22), rgba(115, 201, 255, .08) 34%, transparent 66%);
+  content: "";
+  opacity: 0;
+  animation: fireworks-sky-flash 1.2s ease-out both;
+}
+
 .firework-burst {
   position: absolute;
   top: var(--burst-y);
@@ -1645,26 +1654,26 @@ code {
 
 .firework-burst::after {
   position: absolute;
-  inset: -7px;
-  border: 2px solid rgba(255, 255, 255, .84);
+  inset: -13px;
+  border: 3px solid rgba(255, 255, 255, .9);
   border-radius: 50%;
-  box-shadow: 0 0 20px rgba(124, 112, 255, .75);
+  box-shadow: 0 0 36px rgba(124, 112, 255, .88);
   content: "";
   opacity: 0;
-  animation: firework-flash .65s ease-out var(--burst-delay) both;
+  animation: firework-flash .9s ease-out var(--burst-delay) both;
 }
 
 .firework-burst i {
   position: absolute;
-  top: -3px;
-  left: -3px;
-  width: 7px;
-  height: 7px;
+  top: -5px;
+  left: -5px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: var(--spark-color);
-  box-shadow: 0 0 9px var(--spark-color);
+  box-shadow: 0 0 18px var(--spark-color), 0 0 34px var(--spark-color);
   opacity: 0;
-  animation: firework-spark 1.25s cubic-bezier(.16, .72, .31, 1) var(--burst-delay) both;
+  animation: firework-spark 1.9s cubic-bezier(.16, .72, .31, 1) var(--burst-delay) both;
 }
 
 .agent-conversation-card {
@@ -2338,15 +2347,21 @@ code {
 
 @keyframes firework-spark {
   0% { transform: rotate(var(--spark-angle)) translateX(0) scale(.15); opacity: 0; }
-  10% { opacity: 1; }
-  72% { opacity: 1; }
-  100% { transform: rotate(var(--spark-angle)) translateX(var(--spark-distance)) scale(.45); opacity: 0; }
+  8% { opacity: 1; }
+  68% { opacity: 1; }
+  100% { transform: rotate(var(--spark-angle)) translateX(var(--spark-distance)) scale(.7); opacity: 0; }
 }
 
 @keyframes firework-flash {
   0% { transform: scale(.2); opacity: 0; }
-  16% { opacity: 1; }
-  100% { transform: scale(2.2); opacity: 0; }
+  14% { opacity: 1; }
+  100% { transform: scale(3.1); opacity: 0; }
+}
+
+@keyframes fireworks-sky-flash {
+  0% { opacity: 0; }
+  14% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 @keyframes step-breathe {

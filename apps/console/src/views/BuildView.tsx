@@ -538,11 +538,15 @@ function pipelineStatusForBuild(build: BuildRecord): string {
 }
 
 const FIREWORK_BURSTS = [
-  { x: "17%", y: "25%", delay: "0s" },
-  { x: "49%", y: "17%", delay: ".28s" },
-  { x: "79%", y: "29%", delay: ".56s" },
-  { x: "31%", y: "53%", delay: ".86s" },
-  { x: "69%", y: "57%", delay: "1.08s" },
+  { x: "10%", y: "22%", delay: "0s" },
+  { x: "32%", y: "14%", delay: ".22s" },
+  { x: "55%", y: "23%", delay: ".44s" },
+  { x: "82%", y: "15%", delay: ".66s" },
+  { x: "19%", y: "51%", delay: ".9s" },
+  { x: "45%", y: "43%", delay: "1.12s" },
+  { x: "73%", y: "49%", delay: "1.34s" },
+  { x: "91%", y: "39%", delay: "1.56s" },
+  { x: "56%", y: "68%", delay: "1.78s" },
 ] as const;
 
 const FIREWORK_COLORS = ["#7c70ff", "#55d8a6", "#ffca5c", "#ff6f91", "#73c9ff"] as const;
@@ -560,11 +564,11 @@ function BuildFireworks() {
           } as CSSProperties}
           key={`${burst.x}-${burst.y}`}
         >
-          {Array.from({ length: 14 }, (_, particleIndex) => (
+          {Array.from({ length: 24 }, (_, particleIndex) => (
             <i
               style={{
-                "--spark-angle": `${particleIndex * (360 / 14)}deg`,
-                "--spark-distance": `${58 + (particleIndex % 3) * 17}px`,
+                "--spark-angle": `${particleIndex * (360 / 24)}deg`,
+                "--spark-distance": `${100 + (particleIndex % 4) * 28}px`,
                 "--spark-color": FIREWORK_COLORS[(particleIndex + burstIndex) % FIREWORK_COLORS.length],
               } as CSSProperties}
               key={particleIndex}
@@ -638,10 +642,28 @@ function BuildDetail({ buildId }: { buildId: string }) {
   const celebrated = useRef(false);
   const conversationThread = useRef<HTMLDivElement | null>(null);
   const observedPipelineStatus = feed?.build ? pipelineStatusForBuild(feed.build) : null;
-  const conversation =
+  const conversationEvents =
     feed?.events.filter(
       (event) => event.kind === "devin-user" || event.kind === "devin-message",
     ) ?? [];
+  const initialPrompt = feed?.build.prompt.trim();
+  const initialPromptAlreadyLogged = Boolean(
+    initialPrompt &&
+    conversationEvents.some(
+      (event) => event.kind === "devin-user" && event.message.trim() === initialPrompt,
+    ),
+  );
+  const conversation: BuildEvent[] =
+    feed?.build && initialPrompt && !initialPromptAlreadyLogged
+      ? [
+          {
+            ts: feed.build.createdAt,
+            kind: "devin-user",
+            message: initialPrompt,
+          },
+          ...conversationEvents,
+        ]
+      : conversationEvents;
   const latestConversationEvent = conversation.at(-1);
 
   useEffect(() => {
@@ -661,7 +683,7 @@ function BuildDetail({ buildId }: { buildId: string }) {
 
   useEffect(() => {
     if (!celebrating) return;
-    const timeout = window.setTimeout(() => setCelebrating(false), 3000);
+    const timeout = window.setTimeout(() => setCelebrating(false), 4300);
     return () => window.clearTimeout(timeout);
   }, [celebrating]);
 
@@ -900,14 +922,7 @@ function BuildDetail({ buildId }: { buildId: string }) {
                   <span>{session.acus === undefined ? "ACU metering pending" : `${session.acus} ACUs`}</span>
                   {session.prUrl ? (
                     <div className="session-links">
-                      {showSessionLinks && session.url ? (
-                        <a href={session.url} target="_blank" rel="noreferrer">Session ↗</a>
-                      ) : null}
                       <a href={session.prUrl} target="_blank" rel="noreferrer">PR ↗</a>
-                    </div>
-                  ) : showSessionLinks && session.url ? (
-                    <div className="session-links">
-                      <a href={session.url} target="_blank" rel="noreferrer">Session ↗</a>
                     </div>
                   ) : null}
                 </div>;
