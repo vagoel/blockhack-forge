@@ -50,9 +50,11 @@ when Context.dev is selected but returns no usable grounding.
 1. **Output via the structured output tool only.** Emit exactly:
    `{status, appName, appSpec, appTsx, notes}`.
    - `status`: `"success"` or `"failed"`.
-   - `appName`: short, distinctive display name (string). It becomes the browser-tab title
-     and the source for the generated favicon, so never use generic names such as
-     "Live app", "New app", "Untitled", or "App".
+   - `appName`: short, distinctive public product title (string). It MUST exactly match
+     `appSpec.name` and the primary product name shown in the generated UI. The host uses
+     it for the browser title and favicon (generated from its initials), so never use
+     generic names such as "Live app", "New app", "Untitled", or "App". Do not add
+     `<head>`, `<title>`, or favicon markup inside `appTsx`; the host owns that metadata.
    - `appSpec`: a JSON **object** (NOT a stringified object) — see §5.
    - `appTsx`: the complete raw TSX file content as a **string**.
    - `notes`: optional string (assumptions, limitations).

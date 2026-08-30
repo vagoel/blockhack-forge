@@ -15,5 +15,3 @@ dist/
 build/
 
 .personal
-.vercel
-.env*

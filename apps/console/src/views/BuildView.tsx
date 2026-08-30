@@ -757,7 +757,6 @@ function BuildDetail({ buildId }: { buildId: string }) {
               <h2>{replySessionState.label}</h2>
               <p>{replySessionState.detail}</p>
             </div>
-            {replySession.url ? <a className="agent-session-link" href={replySession.url} target="_blank" rel="noreferrer">Open session ↗</a> : null}
           </div>
           {conversation.length > 0 ? (
             <div
@@ -885,10 +884,11 @@ function BuildDetail({ buildId }: { buildId: string }) {
                   </div>
                   <p>{state.detail}</p>
                   <span>{session.acus === undefined ? "ACU metering pending" : `${session.acus} ACUs`}</span>
-                  <div className="session-links">
-                    {session.url ? <a href={session.url} target="_blank" rel="noreferrer">Session ↗</a> : null}
-                    {session.prUrl ? <a href={session.prUrl} target="_blank" rel="noreferrer">PR ↗</a> : null}
-                  </div>
+                  {session.prUrl ? (
+                    <div className="session-links">
+                      <a href={session.prUrl} target="_blank" rel="noreferrer">PR ↗</a>
+                    </div>
+                  ) : null}
                 </div>;
               })
             )}

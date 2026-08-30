@@ -42,6 +42,14 @@ function relativeTime(timestamp: number): string {
   return days < 7 ? `${days}d ago` : new Date(timestamp).toLocaleDateString();
 }
 
+function hasAdminFlag(): boolean {
+  try {
+    return window.localStorage.getItem("admin") === "true";
+  } catch {
+    return false;
+  }
+}
+
 export default function GalleryView() {
   const operatorKey = useOperatorKey();
   const apps = useQuery(api.apps.list, { operatorKey }) as AppRow[] | undefined;
@@ -107,6 +115,7 @@ function AppCard({
   const shellUrl = `${SHELL_URL}/#/${app.slug}`;
   const appUrl = app.productionUrl ?? shellUrl;
   const contextEnabled = app.connectors.includes("context");
+  const showDelete = hasAdminFlag();
   const hue = [252, 166, 28, 204, 330][index % 5];
 
   async function onRetheme() {
@@ -191,9 +200,11 @@ function AppCard({
             Open app <span aria-hidden="true">↗</span>
           </a>
           <a className="btn" href={`#/projector/${app.slug}`} target="_blank" rel="noreferrer">QR code</a>
-          <button className="btn btn-danger" type="button" onClick={onDelete} disabled={busy}>
-            Delete
-          </button>
+          {showDelete ? (
+            <button className="btn btn-danger" type="button" onClick={onDelete} disabled={busy}>
+              Delete
+            </button>
+          ) : null}
         </div>
 
         <details className="project-tools">

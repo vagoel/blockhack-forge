@@ -1701,7 +1701,6 @@ code {
 .agent-conversation-copy .section-kicker { font-size: 12px; }
 .agent-conversation-copy h2 { margin: 5px 0 5px; font-size: 17px; letter-spacing: -0.02em; }
 .agent-conversation-copy p { margin: 0; color: #737a8a; font-size: 12px; line-height: 1.55; }
-.agent-session-link { flex: none; padding-top: 6px; color: #6259da; font-size: 11px; font-weight: 700; }
 
 .agent-thread {
   display: grid;
@@ -2459,7 +2458,6 @@ code {
   .build-progress-step { grid-column: 2; }
   .build-progress-track { grid-column: 1 / -1; margin-top: 4px; }
   .agent-conversation-head { flex-wrap: wrap; }
-  .agent-session-link { margin-left: 56px; padding-top: 0; }
   .agent-thread,
   .agent-composer { margin-left: 0; }
   .build-inspector { grid-template-columns: 1fr; }

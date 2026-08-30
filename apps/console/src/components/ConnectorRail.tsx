@@ -10,6 +10,9 @@ type ConnectorRailProps = {
 };
 
 export default function ConnectorRail({ selected, readiness, onToggle }: ConnectorRailProps) {
+  const visibleConnectors = CONNECTORS.filter((connector) => connector.id !== "openai");
+  const visibleSelectedCount = visibleConnectors.filter((connector) => selected.has(connector.id)).length;
+
   return (
     <aside className="connector-rail" aria-labelledby="connector-heading">
       <div className="connector-rail-head">
@@ -17,14 +20,14 @@ export default function ConnectorRail({ selected, readiness, onToggle }: Connect
           <span className="section-kicker">Capabilities</span>
           <h2 id="connector-heading">Power this build</h2>
         </div>
-        <span className="connector-count">{selected.size} on</span>
+        <span className="connector-count">{visibleSelectedCount} on</span>
       </div>
       <p className="connector-intro">
         Only selected services are available to generation and runtime.
       </p>
 
       <div className="connector-list">
-        {CONNECTORS.map((connector) => {
+        {visibleConnectors.map((connector) => {
           const enabled = selected.has(connector.id);
           const ready = readiness?.[connector.id];
           return (

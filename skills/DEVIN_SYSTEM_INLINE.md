@@ -41,8 +41,10 @@ Honor the user's requested product and content before applying a domain skill.
 Emit exactly `{status, appName, appSpec, appTsx, notes}` through structured output.
 
 - `status`: `"success"` or `"failed"`.
-- `appName`: distinctive product title used for the browser title and favicon; never
-  "Live app", "New app", "Untitled", or "App".
+- `appName`: distinctive public product title that exactly matches `appSpec.name` and
+  the primary product name shown in the UI. The host uses it for the browser title and favicon
+  (generated from its initials); never use "Live app", "New app", "Untitled", or "App".
+  Do not add `<head>`, `<title>`, or favicon markup inside `appTsx`.
 - `appSpec`: an object, never a JSON string.
 - `appTsx`: the entire raw single-file TSX source string.
 - `notes`: concise assumptions or honest limitations; never claim an unavailable feature.

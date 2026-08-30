@@ -20,6 +20,7 @@ import type * as devinActions from "../devinActions.js";
 import type * as lib_appSpec from "../lib/appSpec.js";
 import type * as lib_compileRepair from "../lib/compileRepair.js";
 import type * as lib_connectors from "../lib/connectors.js";
+import type * as lib_contextSource from "../lib/contextSource.js";
 import type * as lib_devinMode from "../lib/devinMode.js";
 import type * as lib_devinSession from "../lib/devinSession.js";
 import type * as lib_operator from "../lib/operator.js";
@@ -53,6 +54,7 @@ declare const fullApi: ApiFromModules<{
   "lib/appSpec": typeof lib_appSpec;
   "lib/compileRepair": typeof lib_compileRepair;
   "lib/connectors": typeof lib_connectors;
+  "lib/contextSource": typeof lib_contextSource;
   "lib/devinMode": typeof lib_devinMode;
   "lib/devinSession": typeof lib_devinSession;
   "lib/operator": typeof lib_operator;
