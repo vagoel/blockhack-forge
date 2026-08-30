@@ -13,3 +13,5 @@ dist/
 .devin/mcp_config.local.json
 
 build/
+
+.personal
