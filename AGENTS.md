@@ -1,37 +1,27 @@
-# Project Instructions
+# blockhack-forge
 
-## Architecture
+Team project for the Collabute X TheBlock. Hackathon (Aug 30, Dubai) — a one-day AI hackathon. Goal: build an original AI-powered product that solves a real problem, demo-ready by the 5:00 PM strict submission deadline.
 
-- `apps/console` is the private operator-facing builder UI.
-- `apps/shell` is the public audience runtime used by app links, QR codes, stage mode, and projector mode.
-- `convex` is the shared realtime backend and build/deployment control plane.
-- `packages/runtime-sdk` and `packages/ui-kit` are bundled into generated audience apps by `pnpm vendor`.
+## Hard requirements
 
-## Local setup
+Every submission must **meaningfully** integrate all three partner technologies (superficial use = disqualification):
 
-```bash
-pnpm install --frozen-lockfile
-set -a; source apps/console/.env.local; set +a
-pnpm dev
-```
+- **Devin by Cognition** — AI-assisted development workflow
+- **Convex** — backend, database, and realtime infrastructure
+- **Context.dev** — context system
 
-Sourcing the console environment before `pnpm dev` makes `VITE_CONVEX_URL` and `VITE_SHELL_URL` available to both Vite apps. The default ports are `5173` for the console and `5174` for the audience shell.
+Additional APIs, models, and libraries are allowed but cannot replace these three.
 
-Keep `.env`, `.env.local`, `.operator-key`, and all secret values untracked and out of command output.
+## Working agreements
 
-## Verification
+- All core functionality must be built during the event (10:30 AM – 5:00 PM).
+- Disclose any major pre-existing components in the submission.
+- Use test/synthetic data only; never commit secrets or real personal data.
+- Keep the primary user journey working at all times — prefer a stable demo over extra features.
+- Everyone on the team must be able to explain how each partner technology is used.
 
-```bash
-pnpm test
-pnpm typecheck
-pnpm --filter console build
-pnpm --filter shell build
-```
+## Reference
 
-## Deployments
-
-- Builder console: `https://blockhack-forge-console.vercel.app`
-- Audience shell: `https://blockhack-forge-shell.vercel.app`
-- Convex development deployment: `https://outgoing-warbler-572.convex.cloud`
-
-`scripts/deploy.sh` deploys backend code and synchronizes provider credentials to Convex. It has cloud side effects and should only be run when a backend deployment is intended.
+- Event page: https://luma.com/theblock-2ej8
+- Judging: Product Value 25% · Technical Execution 25% · Partner Integration 25% · Innovation 15% · Demo & Clarity 10%
+- Demo: ~3 minutes — problem, product, working functionality, partner tech usage, impact.

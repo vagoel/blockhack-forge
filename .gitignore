@@ -8,3 +8,8 @@ dist/
 .convex/
 .vercel/
 .operator-key
+# Devin CLI local overrides
+.devin/config.local.json
+.devin/mcp_config.local.json
+
+build/

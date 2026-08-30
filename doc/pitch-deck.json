@@ -1,0 +1,79 @@
+{
+  "title": "{{PROJECT_NAME}}",
+  "tagline": "{{PRODUCT_TAGLINE}}",
+  "team": "{{TEAM_MEMBERS}}",
+  "durationMinutes": 3,
+  "placeholders": {
+    "PROJECT_NAME": "",
+    "TEAM_MEMBERS": "",
+    "PRODUCT_TAGLINE": "",
+    "PROBLEM_STATEMENT": "",
+    "TARGET_USERS": "",
+    "SOLUTION_OVERVIEW": "",
+    "KEY_FEATURES": "",
+    "DEVIN_USAGE": "",
+    "CONVEX_USAGE": "",
+    "CONTEXT_DEV_USAGE": "",
+    "IMPACT": "",
+    "REPO_LINK": "",
+    "DEMO_LINK": "",
+    "PRESENTATION_LINK": "",
+    "PRE_EXISTING_ASSETS": ""
+  },
+  "slides": [
+    {
+      "id": "title",
+      "layout": "center",
+      "markdown": "# {{PROJECT_NAME}}\n\n{{PRODUCT_TAGLINE}}\n\nTeam: {{TEAM_MEMBERS}}",
+      "notes": "Hook the judges in 15 seconds. State the product and the team."
+    },
+    {
+      "id": "problem",
+      "layout": "split",
+      "markdown": "# Problem\n\n{{PROBLEM_STATEMENT}}\n\n**Target users:** {{TARGET_USERS}}",
+      "notes": "Make the pain concrete. Who feels it and why?"
+    },
+    {
+      "id": "solution",
+      "layout": "split",
+      "markdown": "# Product\n\n{{SOLUTION_OVERVIEW}}\n\n**Key features:**\n\n{{KEY_FEATURES}}",
+      "notes": "Show what the product does and what makes it different."
+    },
+    {
+      "id": "demo",
+      "layout": "center",
+      "markdown": "# Live Demo\n\n{{DEMO_LINK}}",
+      "notes": "Walk through the primary user journey. Keep it under 60 seconds."
+    },
+    {
+      "id": "devin",
+      "layout": "split",
+      "markdown": "# Built with Devin\n\n{{DEVIN_USAGE}}",
+      "notes": "Explain how Devin directly shaped the build. Avoid superficial mentions."
+    },
+    {
+      "id": "convex",
+      "layout": "split",
+      "markdown": "# Built with Convex\n\n{{CONVEX_USAGE}}",
+      "notes": "Show the backend / database / realtime role Convex plays."
+    },
+    {
+      "id": "contextdev",
+      "layout": "split",
+      "markdown": "# Built with Context.dev\n\n{{CONTEXT_DEV_USAGE}}",
+      "notes": "Explain the context system integration and its value."
+    },
+    {
+      "id": "impact",
+      "layout": "center",
+      "markdown": "# Impact\n\n{{IMPACT}}",
+      "notes": "Close with why this matters and where it could go next."
+    },
+    {
+      "id": "links",
+      "layout": "center",
+      "markdown": "# Links & Disclosures\n\n- **Repository:** {{REPO_LINK}}\n- **Presentation:** {{PRESENTATION_LINK}}\n- **Pre-existing assets:** {{PRE_EXISTING_ASSETS}}",
+      "notes": "Give judges everything they need to validate the submission."
+    }
+  ]
+}
