@@ -1,0 +1,28 @@
+{
+  "name": "app-builder",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev": "concurrently -n convex,console,shell,vendor \"npx convex dev\" \"pnpm --filter console dev\" \"pnpm --filter shell dev\" \"node scripts/build-vendor.mjs --watch\"",
+    "convex": "npx convex dev",
+    "skills:sync": "node scripts/build-skills.mjs",
+    "vendor": "node scripts/build-vendor.mjs",
+    "compile": "node scripts/compile-pending.mjs",
+    "verify:live": "node scripts/verify-live.mjs",
+    "test": "node scripts/test-core.mjs",
+    "typecheck": "tsc -p convex && pnpm --filter console typecheck && pnpm --filter shell typecheck"
+  },
+  "dependencies": {
+    "@convex-dev/presence": "^0.4.0",
+    "@convex-dev/rate-limiter": "^0.3.2",
+    "convex": "^1.17.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.0"
+  }
+}
