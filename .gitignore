@@ -15,3 +15,7 @@ dist/
 build/
 
 .personal
+.vercel
+.env*
+
+.playwright-mcp
