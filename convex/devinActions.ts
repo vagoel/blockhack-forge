@@ -53,6 +53,8 @@ const URL_RE = /https?:\/\/[^\s)"'<>\]]+/;
 const DATA_WORDS_RE = /\b(items?|products?|data|list|listing|catalog|inventory|menu|rows|entries)\b/i;
 const DOCS_WORDS_RE =
   /\b(docs?|documentation|api docs?|sdk docs?|reference guide|according to|based on)\b/i;
+const RESEARCH_WORDS_RE =
+  /\b(research|researcher|sources?|facts?|information|open data|knowledge|evidence|directory|lookup|findings?)\b/i;
 
 function readDevinConfig(): DevinConfig {
   const key = process.env.DEVIN?.trim();
@@ -154,40 +156,77 @@ export const start = internalAction({
       const connectors = [...appConnectors(build)];
       const contextEnabled = connectors.includes("context");
       const detected = contextEnabled ? build.prompt.match(URL_RE)?.[0] ?? null : null;
-      const styleUrl: string | null = contextEnabled ? build.styleUrl ?? detected : null;
+      let contextUrl: string | null = contextEnabled ? build.styleUrl ?? detected : null;
+      const needsContextDiscovery = contextEnabled && !contextUrl;
+      const needsResearchGrounding =
+        contextEnabled &&
+        (DATA_WORDS_RE.test(build.prompt) ||
+          DOCS_WORDS_RE.test(build.prompt) ||
+          RESEARCH_WORDS_RE.test(build.prompt));
+      const shouldCrawlContext = needsContextDiscovery || needsResearchGrounding;
       let theme: unknown | null = null;
       let rows: unknown[] | null = null;
       let dataUrl: string | null = null;
       let docsGrounding: string | null = null;
       let styleGrounding: string | null = null;
 
-      if (styleUrl || detected) {
+      if (contextEnabled) {
         await ctx.runMutation(internal.builds.patch, { buildId, status: "grounding" });
       }
-      if (styleUrl) {
+
+      if (needsContextDiscovery) {
+        const discovered = await ctx.runAction(internal.contextdev.discover, {
+          query: build.prompt.slice(0, 500),
+        });
+        if (!discovered?.url || !discovered?.grounding) {
+          throw new Error(
+            "Context.dev could not discover an authoritative research source. Add a reference URL or retry the build.",
+          );
+        }
+        contextUrl = discovered.url;
+        docsGrounding = discovered.grounding;
+        await ctx.runMutation(internal.builds.patch, { buildId, styleUrl: contextUrl });
+        await log("context", `authoritative research source discovered: ${contextUrl}`);
+      }
+
+      if (contextUrl) {
         const [themeResult, sourceResult] = await Promise.all([
-          ctx.runAction(internal.contextdev.styleguide, { url: styleUrl }).catch(() => null),
-          ctx.runAction(internal.contextdev.sourceStyle, { url: styleUrl }).catch(() => null),
+          ctx.runAction(internal.contextdev.styleguide, { url: contextUrl }).catch(() => null),
+          ctx.runAction(internal.contextdev.sourceStyle, { url: contextUrl }).catch(() => null),
         ]);
         theme = themeResult;
         styleGrounding = typeof sourceResult === "string" ? sourceResult : null;
         await log(
           "context",
           theme
-            ? `brand styleguide extracted from ${styleUrl}`
-            : `styleguide unavailable for ${styleUrl} (skipped)`
+            ? `brand styleguide extracted from ${contextUrl}`
+            : `styleguide unavailable for ${contextUrl} (skipped)`
         );
         await log(
           "context",
           styleGrounding
-            ? `rendered source style extracted from ${styleUrl}`
-            : `rendered source unavailable for ${styleUrl} (skipped)`
+            ? `rendered source style extracted from ${contextUrl}`
+            : `rendered source unavailable for ${contextUrl} (skipped)`
         );
+      }
+
+      if (shouldCrawlContext && contextUrl) {
+        const crawled = await ctx.runAction(internal.contextdev.crawl, { url: contextUrl });
+        if (crawled) {
+          docsGrounding = [docsGrounding, crawled].filter(Boolean).join("\n\n=== VERIFIED SOURCE CRAWL ===\n");
+          await log("context", `research source crawled and grounded: ${contextUrl}`);
+        } else if (!docsGrounding) {
+          throw new Error(
+            `Context.dev could not ground the research source ${contextUrl}. Try another source URL.`,
+          );
+        } else {
+          await log("context", `source crawl unavailable for ${contextUrl}; using verified search content`);
+        }
       }
 
       const fromMatch = contextEnabled ? build.prompt.match(/from (https?:\/\/\S+)/i) : null;
       dataUrl =
-        fromMatch?.[1] ?? (detected && DATA_WORDS_RE.test(build.prompt) ? detected : null);
+        fromMatch?.[1] ?? (contextUrl && DATA_WORDS_RE.test(build.prompt) ? contextUrl : null);
       if (dataUrl) {
         let extracted: unknown = null;
         try {
@@ -212,26 +251,15 @@ export const start = internalAction({
         }
       }
 
-      if (contextEnabled && DOCS_WORDS_RE.test(build.prompt)) {
-        let domains: string[] | undefined;
-        if (detected) {
-          try {
-            domains = [new URL(detected).hostname];
-          } catch {
-            domains = undefined;
-          }
-        }
-        try {
-          docsGrounding = await ctx.runAction(internal.contextdev.search, {
-            query: build.prompt.slice(0, 500),
-            domains,
-          });
-        } catch {
-          docsGrounding = null;
-        }
-        await log(
-          "context",
-          docsGrounding ? "documentation grounding retrieved" : "documentation grounding unavailable (skipped)"
+      if (
+        contextEnabled &&
+        !theme &&
+        !styleGrounding &&
+        !docsGrounding &&
+        (!rows || rows.length === 0)
+      ) {
+        throw new Error(
+          "Context.dev returned no usable grounding. The builder stopped instead of publishing an ungrounded app; retry or provide a different source URL.",
         );
       }
 

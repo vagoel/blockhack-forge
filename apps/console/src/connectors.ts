@@ -30,6 +30,14 @@ export const CONNECTORS: readonly ConnectorDefinition[] = [
     monogram: "CT",
   },
   {
+    id: "openai",
+    name: "Intelligence",
+    eyebrow: "AI",
+    description: "Optional intelligent generation inside the finished app.",
+    color: "#7567e8",
+    monogram: "AI",
+  },
+  {
     id: "vercel",
     name: "Vercel",
     eyebrow: "Delivery",
@@ -44,4 +52,12 @@ export const DEFAULT_CONNECTORS: ConnectorId[] = ["vercel"];
 
 export function orderedConnectors(selected: ReadonlySet<ConnectorId>): ConnectorId[] {
   return CONNECTOR_IDS.filter((id) => selected.has(id));
+}
+
+export function connectorLabel(id: string): string {
+  return CONNECTORS.find((connector) => connector.id === id)?.name ?? id;
+}
+
+export function connectorMark(id: string): string {
+  return CONNECTORS.find((connector) => connector.id === id)?.monogram ?? id.charAt(0).toUpperCase();
 }

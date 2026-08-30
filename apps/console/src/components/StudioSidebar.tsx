@@ -3,7 +3,7 @@ import type { CompileWorkerStatus } from "../compileWorker";
 import { api, SHELL_URL } from "../convexClient";
 import { useOperatorKey } from "../operator";
 
-type ActiveView = "build" | "gallery" | "recent";
+type ActiveView = "build" | "gallery";
 
 type RecentApp = {
   _id: string;
@@ -21,8 +21,7 @@ const NAV_ITEMS: Array<{
   glyph: string;
 }> = [
   { view: "build", label: "New app", detail: "Start creating", href: "#/build", glyph: "+" },
-  { view: "gallery", label: "Projects", detail: "Apps & stage", href: "#/gallery", glyph: "▦" },
-  { view: "recent", label: "Activity", detail: "Build history", href: "#/recent", glyph: "↗" },
+  { view: "gallery", label: "Projects", detail: "Your live apps", href: "#/gallery", glyph: "▦" },
 ];
 
 export default function StudioSidebar({
@@ -63,18 +62,6 @@ export default function StudioSidebar({
             </span>
           </a>
         ))}
-        <a
-          className="studio-nav-item"
-          href={`${SHELL_URL}/#/stage`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          <span className="nav-glyph nav-glyph-live" aria-hidden="true">●</span>
-          <span>
-            <strong>Stage</strong>
-            <small>Open live view</small>
-          </span>
-        </a>
       </nav>
 
       <div className="sidebar-recents">

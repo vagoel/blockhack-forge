@@ -93,6 +93,16 @@ try {
     "apps/console/src/sourcePolicy.ts",
     "source-policy",
   );
+  const {
+    compileRepairPrompt,
+    shouldAutomaticallyRepairCompile,
+  } = await load("convex/lib/compileRepair.ts", "compile-repair");
+  assert.equal(shouldAutomaticallyRepairCompile(undefined, true), true);
+  assert.equal(shouldAutomaticallyRepairCompile(0, true), true);
+  assert.equal(shouldAutomaticallyRepairCompile(1, true), false);
+  assert.equal(shouldAutomaticallyRepairCompile(0, false), false);
+  assert.match(compileRepairPrompt("property view is not allowed\n(1142:10)"), /complete structured output/);
+  assert.doesNotMatch(compileRepairPrompt("x".repeat(5_000)), /x{1300}/);
   const { COMPILER_SHIMS } = await load(
     "apps/console/src/compilerShims.ts",
     "compiler-shims",
@@ -192,9 +202,26 @@ try {
       export default function App(){ return <Navigation view="guide" />; }
     `),
   );
+  assert.doesNotThrow(() =>
+    validateGeneratedSource(`
+      export default function App() {
+        const record = {
+          constructor: "construction category",
+          nativeEvent: "conference label",
+          defaultView: "tablet",
+          ownerDocument: "prepared source",
+        };
+        return <div>{Object.entries(record).map(([name, value]) => <p key={name}>{value}</p>)}</div>;
+      }
+    `),
+  );
   assert.throws(
     () => validateGeneratedSource(`export default function App(){ return <button onClick={(event) => event.nativeEvent}>x</button>; }`),
     /property nativeEvent is not allowed/,
+  );
+  assert.throws(
+    () => validateGeneratedSource(`export default function App(){ const item = {}; return <div>{item.constructor.name}</div>; }`),
+    /property constructor is not allowed/,
   );
   assert.doesNotThrow(() =>
     validateGeneratedSource(`
@@ -345,7 +372,7 @@ try {
         `import { useAI } from "@runtime/sdk"; export default function App(){ const ai=useAI(); return <button onClick={()=>ai.generate("hi")}>AI</button>; }`,
         ["vercel"],
       ),
-    /useAI requires the OpenAI connector/,
+    /useAI requires the Intelligence capability/,
   );
 
   const { matchSkills, composeDevinPrompt } = await load(
@@ -370,8 +397,16 @@ try {
     "Build a polished SaaS website with a landing page and pricing",
     ["vercel"],
   ).map((skill) => skill.name);
+  assert.ok(siteSkills.includes("opinionated-ui"));
+  assert.ok(siteSkills.includes("admin-controls"));
   assert.ok(siteSkills.includes("site-builder"));
   assert.ok(!siteSkills.includes("presence-rooms"));
+
+  const plainUtilitySkills = matchSkills("Build a tiny unit converter", ["vercel"]).map(
+    (skill) => skill.name,
+  );
+  assert.ok(plainUtilitySkills.includes("opinionated-ui"));
+  assert.ok(plainUtilitySkills.includes("admin-controls"));
 
   const contextSkills = matchSkills(
     "Build a searchable product catalog from this website and its brand styleguide",
@@ -416,10 +451,38 @@ try {
   const grounded = composeDevinPrompt({
     userPrompt: "Build from the API docs",
     docsGrounding: "Authoritative reference text",
+    connectors: ["context", "vercel"],
     inlineSystem: false,
   });
   assert.match(grounded, /PREPARED WEB\/DOCS GROUNDING/);
   assert.match(grounded, /Authoritative reference text/);
+  assert.match(grounded, /Context grounding: VERIFIED/);
+  assert.match(grounded, /Include "context" only when verified/);
+  const ungroundedContextPrompt = composeDevinPrompt({
+    userPrompt: "Build a simple landing page",
+    connectors: ["context", "vercel"],
+    inlineSystem: false,
+  });
+  assert.match(ungroundedContextPrompt, /NO VERIFIED OUTPUT WAS RETURNED/);
+  assert.match(ungroundedContextPrompt, /do not invent substitute research/);
+
+  const { selectResearchSource } = await load("convex/contextdev.ts", "contextdev");
+  const selectedResearchSource = selectResearchSource([
+    {
+      url: "https://reddit.com/r/example",
+      title: "Unofficial discussion",
+      relevance: "high",
+      markdown: { code: "SUCCESS", markdown: "community answer" },
+    },
+    {
+      url: "https://www.zu.ac.ae/programs/tuition",
+      title: "Official tuition information",
+      relevance: "high",
+      markdown: { code: "SUCCESS", markdown: "published fees" },
+    },
+  ]);
+  assert.equal(selectedResearchSource.url, "https://www.zu.ac.ae/programs/tuition");
+  assert.equal(selectedResearchSource.markdown, "published fees");
   const connectorPrompt = composeDevinPrompt({
     userPrompt: "Make an AI writing helper",
     connectors: ["openai", "vercel"],
@@ -455,9 +518,17 @@ try {
     connectors: ["convex", "context", "openai", "vercel"],
     inlineSystem: true,
   });
-  assert.ok(worstCasePrompt.length < 26000, `prompt length ${worstCasePrompt.length}`);
+  assert.ok(worstCasePrompt.length < 27600, `prompt length ${worstCasePrompt.length}`);
   assert.match(worstCasePrompt, /ENFORCED CONNECTOR PERMISSIONS/);
-  for (const core of ["context-core", "convex-platform", "realtime-state", "openai", "theming"]) {
+  for (const core of [
+    "admin-controls",
+    "context-core",
+    "convex-platform",
+    "realtime-state",
+    "openai",
+    "opinionated-ui",
+    "theming",
+  ]) {
     assert.match(worstCasePrompt, new RegExp(`CORE SKILL: ${core}`));
   }
   assert.match(worstCasePrompt, /SKILL: [\w-]+ \(primary — condensed\)/);

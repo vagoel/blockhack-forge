@@ -38,6 +38,16 @@ No `uniqueBy` guard needed — doc-claiming via `rt.claim` is inherently atomic.
 
 (120/min because an eager player taps fast; each tap is one claim attempt.)
 
+## Admin reset and round keys
+
+The required admin view includes `Reset game` / `New round`. Subscribe to a control doc
+such as `meta/game` with `{round?: number}` (default `0`), prefix every claimed cell key
+with the round (`${round}:${cell}`), and render only that prefix. Reset with
+`rt.increment("meta", "game", "round", 1)`, then initialize any round-specific turn doc
+or timer. Old claimed docs remain stored but are outside the current round. Derive current
+scores from current-round cells; built-in leaderboard rows cannot all be cleared by one
+admin client.
+
 ## Interaction patterns
 
 - Render the grid with `Grid {cols}` from the UI kit or a plain CSS grid; cells are

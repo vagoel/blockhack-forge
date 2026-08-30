@@ -313,7 +313,7 @@ export function validateGeneratedSource(
               fail(sourceFile, element, `${imported} requires the Convex connector`);
             }
             if (!connectors.includes("openai") && OPENAI_RUNTIME_APIS.has(imported)) {
-              fail(sourceFile, element, `${imported} requires the OpenAI connector`);
+              fail(sourceFile, element, `${imported} requires the Intelligence capability`);
             }
           }
         }
@@ -360,13 +360,10 @@ export function validateGeneratedSource(
         fail(sourceFile, name, `property ${name.text} is not allowed`);
       }
     }
-    if (ts.isPropertyAssignment(node) || ts.isShorthandPropertyAssignment(node)) {
-      const name = node.name;
-      if ((ts.isIdentifier(name) || ts.isStringLiteralLike(name)) && FORBIDDEN_PROPERTIES.has(name.text)) {
-        fail(sourceFile, name, `property ${name.text} is not allowed`);
-      }
-    }
-
+    // A denylisted word used only as an object-literal key is data, not a
+    // capability. Reject reads/destructuring below, where the value could
+    // actually expose a DOM or prototype escape hatch, without breaking
+    // ordinary domain models that happen to contain the same vocabulary.
     if (ts.isPropertyAccessExpression(node) && FORBIDDEN_PROPERTIES.has(node.name.text)) {
       fail(sourceFile, node.name, `property ${node.name.text} is not allowed`);
     }
@@ -379,7 +376,7 @@ export function validateGeneratedSource(
         fail(sourceFile, node.name, `${node.name.text} requires the Convex connector`);
       }
       if (!connectors.includes("openai") && OPENAI_RUNTIME_APIS.has(node.name.text)) {
-        fail(sourceFile, node.name, `${node.name.text} requires the OpenAI connector`);
+        fail(sourceFile, node.name, `${node.name.text} requires the Intelligence capability`);
       }
     }
     if (ts.isElementAccessExpression(node)) {

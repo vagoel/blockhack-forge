@@ -355,35 +355,177 @@ export const extract = internalAction({
   },
 });
 
-export const search = internalAction({
-  args: { query: v.string(), domains: v.optional(v.array(v.string())) },
-  returns: v.union(v.string(), v.null()),
-  handler: async (ctx, { query, domains }): Promise<string | null> => {
+type ResearchSource = {
+  url: string;
+  title: string | null;
+  description: string | null;
+  markdown: string | null;
+};
+
+const LOW_TRUST_RESEARCH_HOSTS = new Set([
+  "facebook.com",
+  "instagram.com",
+  "linkedin.com",
+  "pinterest.com",
+  "reddit.com",
+  "tiktok.com",
+  "x.com",
+  "youtube.com",
+]);
+
+function normalizedHttpUrl(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  try {
+    const parsed = new URL(value.trim());
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
+    parsed.hash = "";
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+/** Prefer authoritative, scrapeable results while retaining Context.dev's relevance order. */
+export function selectResearchSource(results: unknown): ResearchSource | null {
+  if (!Array.isArray(results)) return null;
+  const candidates = results
+    .map((raw: any, index) => {
+      const url = normalizedHttpUrl(raw?.url);
+      if (!url) return null;
+      const parsed = new URL(url);
+      const hostname = parsed.hostname.toLowerCase().replace(/^www\./, "");
+      const rootHost = [...LOW_TRUST_RESEARCH_HOSTS].find(
+        (blocked) => hostname === blocked || hostname.endsWith(`.${blocked}`),
+      );
+      const title = typeof raw?.title === "string" && raw.title.trim() ? raw.title.trim() : null;
+      const description =
+        typeof raw?.description === "string" && raw.description.trim()
+          ? raw.description.trim()
+          : null;
+      const markdown =
+        raw?.markdown?.code === "SUCCESS" && typeof raw.markdown.markdown === "string"
+          ? raw.markdown.markdown.trim() || null
+          : null;
+      const institutional = /(?:\.gov|\.edu|\.ac)(?:\.[a-z]{2})?$/.test(hostname);
+      const score =
+        (raw?.relevance === "high" ? 60 : raw?.relevance === "medium" ? 30 : 0) +
+        (institutional ? 20 : 0) +
+        (/\bofficial\b/i.test(`${title ?? ""} ${description ?? ""}`) ? 12 : 0) +
+        (markdown ? 8 : 0) +
+        (parsed.protocol === "https:" ? 2 : 0) -
+        (rootHost ? 100 : 0) -
+        index * 0.01;
+      return { source: { url, title, description, markdown }, score };
+    })
+    .filter((entry): entry is { source: ResearchSource; score: number } => entry !== null)
+    .sort((a, b) => b.score - a.score);
+  return candidates[0]?.source ?? null;
+}
+
+function discoveryGrounding(source: ResearchSource, results: any[]): string {
+  const alternatives = results
+    .map((result) => {
+      const url = normalizedHttpUrl(result?.url);
+      if (!url) return null;
+      const title = typeof result?.title === "string" ? result.title.trim() : "Untitled source";
+      const description =
+        typeof result?.description === "string" ? result.description.trim() : "";
+      return `- ${title || "Untitled source"}\n  URL: ${url}${description ? `\n  Summary: ${description}` : ""}`;
+    })
+    .filter((value): value is string => Boolean(value))
+    .slice(0, 5)
+    .join("\n");
+  return [
+    "Context.dev Web Search selected this primary research source:",
+    `Primary source URL: ${source.url}`,
+    source.title ? `Primary source title: ${source.title}` : "",
+    source.description ? `Primary source summary: ${source.description}` : "",
+    source.markdown ? `\nPrimary source content:\n${source.markdown.slice(0, 12_000)}` : "",
+    alternatives ? `\nOther Context.dev search results for provenance:\n${alternatives}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export const discover = internalAction({
+  args: { query: v.string() },
+  returns: v.any(),
+  handler: async (ctx, { query }): Promise<{ url: string; grounding: string } | null> => {
     return await withContextLease(ctx, async () => {
       const body = await post("/web/search", {
-        query: query.slice(0, 500),
+        query: `${query.slice(0, 430)} official authoritative source`,
         numResults: 10,
+        queryFanout: true,
+        excludeDomains: [...LOW_TRUST_RESEARCH_HOSTS],
         markdownOptions: {
           enabled: true,
+          includeLinks: true,
           useMainContentOnly: true,
           includeImages: false,
-          timeoutMS: 30000,
+          shortenBase64Images: true,
+          timeoutMS: 60000,
         },
+        timeoutMS: 90000,
         tags: ["app-builder"],
-        ...(domains && domains.length > 0 ? { includeDomains: domains } : {}),
       });
       if (!body) return null;
       const results = Array.isArray(body) ? body : body.results ?? body.data ?? [];
-      const parts = (Array.isArray(results) ? results : [])
-        .map((r: any) =>
-          typeof r === "string"
-            ? r
-            : r?.markdown?.code === "SUCCESS"
-              ? r.markdown.markdown
-              : r?.md ?? r?.content ?? r?.text
-        )
-        .filter((s: unknown): s is string => typeof s === "string" && s.trim().length > 0);
-      return parts.length > 0 ? parts.join("\n\n---\n\n") : null;
+      const source = selectResearchSource(results);
+      if (!source) return null;
+      return {
+        url: source.url,
+        grounding: discoveryGrounding(source, Array.isArray(results) ? results : []),
+      };
+    });
+  },
+});
+
+export const crawl = internalAction({
+  args: { url: v.string() },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, { url }): Promise<string | null> => {
+    const normalized = normalizedHttpUrl(url);
+    if (!normalized) return null;
+    const cacheKey = `research-crawl:v1:${normalized}`;
+    const cached = await ctx.runQuery(internal.builds.cacheGet, { cacheKey });
+    if (typeof cached === "string") return cached;
+    return await withContextLease(ctx, async () => {
+      const body = await post("/web/crawl", {
+        url: normalized,
+        maxPages: 8,
+        maxDepth: 1,
+        includeLinks: true,
+        includeImages: false,
+        shortenBase64Images: true,
+        useMainContentOnly: true,
+        followSubdomains: true,
+        pdf: { shouldParse: true, ocr: false },
+        waitForMs: 2000,
+        stopAfterMs: 70000,
+        timeoutMS: 90000,
+        tags: ["app-builder", "research-grounding"],
+      });
+      const results = Array.isArray(body?.results) ? body.results : [];
+      let remaining = 18_000;
+      const parts: string[] = [];
+      for (const result of results) {
+        const markdown = typeof result?.markdown === "string" ? result.markdown.trim() : "";
+        const sourceUrl = normalizedHttpUrl(
+          result?.metadata?.finalUrl ?? result?.metadata?.url ?? result?.metadata?.sourceUrl,
+        );
+        if (!markdown || !sourceUrl || remaining <= 0) continue;
+        const title =
+          typeof result?.metadata?.title === "string" ? result.metadata.title.trim() : "";
+        const header = `Source URL: ${sourceUrl}${title ? `\nSource title: ${title}` : ""}\n`;
+        const excerpt = markdown.slice(0, Math.max(0, remaining - header.length));
+        parts.push(`${header}${excerpt}`);
+        remaining -= header.length + excerpt.length;
+      }
+      const grounding = parts.length > 0 ? parts.join("\n\n---\n\n") : null;
+      if (grounding) {
+        await ctx.runMutation(internal.builds.cachePut, { cacheKey, value: grounding });
+      }
+      return grounding;
     });
   },
 });

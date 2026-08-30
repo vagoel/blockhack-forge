@@ -83,11 +83,21 @@ export const list = query({
       prompt: v.string(),
       connectors: connectorsValidator,
       productionUrl: v.optional(v.string()),
+      buildId: v.optional(v.id("builds")),
     })
   ),
   handler: async (ctx, args) => {
     requireOperator(args.operatorKey);
-    const apps = await ctx.db.query("apps").order("desc").take(50);
+    const apps = (await ctx.db.query("apps").order("desc").take(100))
+      .filter((app) => app.hiddenAt === undefined)
+      .slice(0, 50);
+    const builds = await ctx.db.query("builds").order("desc").take(200);
+    const buildIdByApp = new Map<string, Id<"builds">>();
+    for (const build of builds) {
+      if (build.appId && !buildIdByApp.has(build.appId)) {
+        buildIdByApp.set(build.appId, build._id);
+      }
+    }
     return apps.map((a) => ({
       _id: a._id,
       slug: a.slug,
@@ -97,6 +107,7 @@ export const list = query({
       prompt: a.prompt,
       connectors: [...appConnectors(a)],
       productionUrl: a.productionUrl,
+      buildId: buildIdByApp.get(a._id),
     }));
   },
 });
@@ -152,6 +163,21 @@ export const setTheme = mutation({
     if (!parsed.success) throw new Error("Invalid theme");
     const next = parsed.data;
     await ctx.db.patch(app._id, { theme: { ...prev, ...next } });
+    return null;
+  },
+});
+
+/** Removes an app from the Projects gallery without deleting its deployment or build data. */
+export const removeFromProjects = mutation({
+  args: { slug: v.string(), operatorKey: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    requireOperator(args.operatorKey);
+    const app = await ctx.db
+      .query("apps")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .first();
+    if (app) await ctx.db.patch(app._id, { hiddenAt: Date.now() });
     return null;
   },
 });

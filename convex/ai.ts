@@ -22,7 +22,7 @@ export const claim = internalMutation({
   handler: async (ctx, args) => {
     const app = await ctx.db.get(args.appId);
     if (!app || !hasAppConnector(app, "openai")) {
-      throw new Error("OpenAI is not enabled for this app");
+      throw new Error("Intelligence is not enabled for this app");
     }
     const sessionId = args.sessionId.trim();
     if (!sessionId || sessionId.length > 128) throw new Error("Invalid session");
@@ -105,7 +105,7 @@ export const generate = action({
     });
 
     const key = (process.env.OPENAI_API_KEY ?? process.env.OPENAI_KEY)?.trim();
-    if (!key) throw new Error("OpenAI is not configured");
+    if (!key) throw new Error("Intelligence is not configured");
     const model = process.env.OPENAI_MODEL?.trim() || "gpt-5.6-luna";
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",

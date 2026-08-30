@@ -2,14 +2,12 @@ import { useEffect, useState } from "react";
 import { useCompileWorker } from "./compileWorker";
 import BuildView from "./views/BuildView";
 import GalleryView from "./views/GalleryView";
-import RecentBuildsView from "./views/RecentBuildsView";
 import ProjectorView from "./views/ProjectorView";
 import StudioSidebar from "./components/StudioSidebar";
 
 type Route =
   | { view: "build"; buildId: string | null }
   | { view: "gallery" }
-  | { view: "recent" }
   | { view: "projector"; slug: string };
 
 function parseRoute(): Route {
@@ -21,7 +19,7 @@ function parseRoute(): Route {
     return { view: "projector", slug: decodeURIComponent(parts[1]) };
   }
   if (parts[0] === "gallery") return { view: "gallery" };
-  if (parts[0] === "recent" || parts[0] === "builds") return { view: "recent" };
+  if (parts[0] === "recent" || parts[0] === "builds") return { view: "gallery" };
   if (parts[0] === "build" && parts[1]) {
     return { view: "build", buildId: parts[1] };
   }
@@ -61,13 +59,11 @@ function ConsoleApp() {
           <nav aria-label="Mobile studio navigation">
             <a className={route.view === "build" ? "is-active" : ""} href="#/build">Create</a>
             <a className={route.view === "gallery" ? "is-active" : ""} href="#/gallery">Projects</a>
-            <a className={route.view === "recent" ? "is-active" : ""} href="#/recent">Activity</a>
           </nav>
         </header>
         <main className={`studio-main studio-main-${route.view}`}>
         {route.view === "build" && <BuildView buildId={route.buildId} />}
         {route.view === "gallery" && <GalleryView />}
-        {route.view === "recent" && <RecentBuildsView />}
         </main>
       </div>
     </div>

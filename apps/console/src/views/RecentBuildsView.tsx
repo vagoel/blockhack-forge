@@ -1,4 +1,5 @@
 import { useQuery } from "convex/react";
+import { connectorMark } from "../connectors";
 import { api } from "../convexClient";
 import { useOperatorKey } from "../operator";
 
@@ -95,7 +96,9 @@ export default function RecentBuildsView() {
                     </span>
                     {build.connectors?.length ? (
                       <span className="activity-connectors">
-                        {build.connectors.slice(0, 3).map((connector) => <i key={connector}>{connector.charAt(0).toUpperCase()}</i>)}
+                        {build.connectors.slice(0, 3).map((connector) => (
+                          <i key={connector}>{connectorMark(connector)}</i>
+                        ))}
                       </span>
                     ) : null}
                     {build.appSlug ? <code>{build.appSlug}</code> : null}

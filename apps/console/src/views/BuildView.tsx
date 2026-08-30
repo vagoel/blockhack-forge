@@ -1,9 +1,17 @@
-import { type CSSProperties, type FormEvent, type KeyboardEvent, useState } from "react";
+import {
+  type CSSProperties,
+  type FormEvent,
+  type KeyboardEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import ConnectorRail, { type ConnectorReadiness } from "../components/ConnectorRail";
 import {
   CONNECTORS,
   DEFAULT_CONNECTORS,
+  connectorLabel,
   orderedConnectors,
   type ConnectorId,
 } from "../connectors";
@@ -143,7 +151,7 @@ function BuildForm() {
     | undefined;
   const [prompt, setPrompt] = useState("");
   const [styleUrl, setStyleUrl] = useState("");
-  const [devinMode, setDevinMode] = useState<DevinMode>("default");
+  const [devinMode, setDevinMode] = useState<DevinMode>("fast");
   const [selected, setSelected] = useState<Set<ConnectorId>>(
     () => new Set(DEFAULT_CONNECTORS),
   );
@@ -237,13 +245,13 @@ function BuildForm() {
           {contextEnabled ? (
             <div className="reference-field">
               <span className="reference-icon" aria-hidden="true">↗</span>
-              <label htmlFor="styleUrl">Use a website as the visual reference</label>
+              <label htmlFor="styleUrl">Reference or research URL <small>(optional)</small></label>
               <input
                 id="styleUrl"
                 type="url"
                 value={styleUrl}
                 onChange={(event) => setStyleUrl(event.target.value)}
-                placeholder="https://the-site-to-match.com"
+                placeholder="Leave blank and Context.dev will discover a research source"
               />
             </div>
           ) : null}
@@ -263,7 +271,7 @@ function BuildForm() {
                   value={devinMode}
                   onChange={(event) => setDevinMode(event.target.value as DevinMode)}
                   aria-label="Devin Cloud mode"
-                  aria-describedby="devin-mode-description devin-model-boundary"
+                  aria-describedby="devin-mode-description"
                 >
                   {DEVIN_MODES.map((mode) => {
                     const supported = modeSupported(mode.id);
@@ -282,10 +290,6 @@ function BuildForm() {
                 <span>{selectedMode.meta}</span>
               </div>
             </div>
-            <p className="devin-mode-note" id="devin-model-boundary">
-              The underlying model is managed by Devin. Cloud Sessions cannot pin SOL,
-              Fable, or Opus 4.8; those choices are available only in Devin CLI.
-            </p>
             {devinCapabilities?.apiVersion === "v1" ? (
               <p className="devin-mode-note">
                 Named modes require a Devin v3 service-user key. Organization default is ready on this V1 connection.
@@ -380,7 +384,15 @@ function Timeline({ status }: { status: string }) {
         const active = status !== "error" && index === current && !done;
         return (
           <li key={stage.label} className={`step${done ? " done" : ""}${active ? " current" : ""}`}>
-            <span className="step-dot">{done ? "✓" : index + 1}</span>
+            <span className="step-dot">
+              {done ? "✓" : active ? (
+                <span className="step-loader" aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              ) : index + 1}
+            </span>
             <span className="step-label">{stage.label}</span>
           </li>
         );
@@ -389,11 +401,111 @@ function Timeline({ status }: { status: string }) {
   );
 }
 
+const PROGRESS_COPY: Record<string, { title: string; detail: string }> = {
+  queued: {
+    title: "Setting up your build",
+    detail: "Reserving the workspace and preparing your brief.",
+  },
+  grounding: {
+    title: "Gathering context for your app",
+    detail: "Preparing the references and source material Devin will use.",
+  },
+  generating: {
+    title: "Devin is building your app",
+    detail: "Creating the screens, interactions, and visual polish now.",
+  },
+  awaiting_compile: {
+    title: "Turning the code into a preview",
+    detail: "Generation is complete and the browser build is compiling.",
+  },
+  queued_deploy: {
+    title: "Your app is queued for publishing",
+    detail: "The preview is ready and production is next.",
+  },
+  deploying: {
+    title: "Publishing your app",
+    detail: "Preparing the production link and final deployment.",
+  },
+};
+
+function BuildProgressStrip({ status }: { status: string }) {
+  if (status === "live") return null;
+  const failed = status === "error";
+  const current = failed ? 0 : stageIndex(status);
+  const copy = failed
+    ? { title: "Build needs attention", detail: "Review the message below to continue." }
+    : PROGRESS_COPY[status] ?? PROGRESS_COPY.queued;
+
+  return (
+    <section
+      className={`build-progress-strip${failed ? " is-error" : ""}`}
+      aria-live="polite"
+      aria-label={copy.title}
+    >
+      <div className="build-progress-icon" aria-hidden="true">
+        {failed ? <strong>!</strong> : <span className="step-loader"><i /><i /><i /></span>}
+      </div>
+      <div className="build-progress-copy">
+        <strong>{copy.title}</strong>
+        <span>{copy.detail}</span>
+      </div>
+      <span className="build-progress-step">{failed ? "Paused" : `Step ${current + 1} of ${STAGES.length}`}</span>
+      <div
+        className="build-progress-track"
+        role="progressbar"
+        aria-label="Build pipeline progress"
+        aria-valuemin={1}
+        aria-valuemax={STAGES.length}
+        aria-valuenow={current + 1}
+        aria-valuetext={failed ? "Build needs attention" : STAGES[current]?.label}
+      >
+        {STAGES.map((stage, index) => (
+          <span
+            className={index < current ? "is-done" : index === current ? "is-current" : ""}
+            key={stage.label}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function fmtTs(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 type SessionTone = "active" | "waiting" | "complete" | "error" | "paused";
+type PreviewDevice = "phone" | "tablet" | "desktop";
+
+const PREVIEW_DEVICES: ReadonlyArray<{ id: PreviewDevice; label: string }> = [
+  { id: "phone", label: "Phone view" },
+  { id: "tablet", label: "Tablet view" },
+  { id: "desktop", label: "Desktop view" },
+];
+
+function PreviewDeviceIcon({ device }: { device: PreviewDevice }) {
+  if (device === "desktop") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="2.75" y="4" width="18.5" height="12.5" rx="1.8" />
+        <path d="M8.5 20h7M12 16.5V20" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect
+        x={device === "phone" ? "7" : "4.5"}
+        y="2.5"
+        width={device === "phone" ? "10" : "15"}
+        height="19"
+        rx={device === "phone" ? "2.5" : "2"}
+      />
+      <path d={device === "phone" ? "M10.5 5h3" : "M11 18.75h2"} />
+    </svg>
+  );
+}
 
 function buildStatusLabel(build: BuildRecord, pipelineStatus: string): string {
   if (build.status === "error") return "Needs attention";
@@ -407,6 +519,54 @@ function buildStatusLabel(build: BuildRecord, pipelineStatus: string): string {
     live: "Live",
   };
   return labels[pipelineStatus] ?? pipelineStatus.replace(/_/g, " ");
+}
+
+function pipelineStatusForBuild(build: BuildRecord): string {
+  if (build.status !== "live" || !build.deploymentStatus || build.deploymentStatus === "ready") {
+    return build.status;
+  }
+  if (build.deploymentStatus === "queued") return "queued_deploy";
+  if (build.deploymentStatus === "error") return "deploying";
+  return build.deploymentStatus;
+}
+
+const FIREWORK_BURSTS = [
+  { x: "17%", y: "25%", delay: "0s" },
+  { x: "49%", y: "17%", delay: ".28s" },
+  { x: "79%", y: "29%", delay: ".56s" },
+  { x: "31%", y: "53%", delay: ".86s" },
+  { x: "69%", y: "57%", delay: "1.08s" },
+] as const;
+
+const FIREWORK_COLORS = ["#7c70ff", "#55d8a6", "#ffca5c", "#ff6f91", "#73c9ff"] as const;
+
+function BuildFireworks() {
+  return (
+    <div className="build-fireworks" aria-hidden="true">
+      {FIREWORK_BURSTS.map((burst, burstIndex) => (
+        <span
+          className="firework-burst"
+          style={{
+            "--burst-x": burst.x,
+            "--burst-y": burst.y,
+            "--burst-delay": burst.delay,
+          } as CSSProperties}
+          key={`${burst.x}-${burst.y}`}
+        >
+          {Array.from({ length: 14 }, (_, particleIndex) => (
+            <i
+              style={{
+                "--spark-angle": `${particleIndex * (360 / 14)}deg`,
+                "--spark-distance": `${58 + (particleIndex % 3) * 17}px`,
+                "--spark-color": FIREWORK_COLORS[(particleIndex + burstIndex) % FIREWORK_COLORS.length],
+              } as CSSProperties}
+              key={particleIndex}
+            />
+          ))}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 function describeSession(
@@ -464,6 +624,44 @@ function BuildDetail({ buildId }: { buildId: string }) {
   const [replyText, setReplyText] = useState("");
   const [replying, setReplying] = useState(false);
   const [replyNote, setReplyNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const [previewDevice, setPreviewDevice] = useState<PreviewDevice>("tablet");
+  const [celebrating, setCelebrating] = useState(false);
+  const previousPipelineStatus = useRef<string | null>(null);
+  const celebrated = useRef(false);
+  const conversationThread = useRef<HTMLDivElement | null>(null);
+  const observedPipelineStatus = feed?.build ? pipelineStatusForBuild(feed.build) : null;
+  const conversation =
+    feed?.events.filter(
+      (event) => event.kind === "devin-user" || event.kind === "devin-message",
+    ) ?? [];
+  const latestConversationEvent = conversation.at(-1);
+
+  useEffect(() => {
+    if (!observedPipelineStatus) return;
+    const previous = previousPipelineStatus.current;
+    previousPipelineStatus.current = observedPipelineStatus;
+    if (
+      observedPipelineStatus === "live" &&
+      previous !== null &&
+      previous !== "live" &&
+      !celebrated.current
+    ) {
+      celebrated.current = true;
+      setCelebrating(true);
+    }
+  }, [observedPipelineStatus]);
+
+  useEffect(() => {
+    if (!celebrating) return;
+    const timeout = window.setTimeout(() => setCelebrating(false), 3000);
+    return () => window.clearTimeout(timeout);
+  }, [celebrating]);
+
+  useEffect(() => {
+    const thread = conversationThread.current;
+    if (!thread || !latestConversationEvent) return;
+    thread.scrollTo({ top: thread.scrollHeight, behavior: "smooth" });
+  }, [conversation.length, latestConversationEvent?.ts, latestConversationEvent?.message]);
 
   if (feed === undefined) {
     return (
@@ -487,17 +685,9 @@ function BuildDetail({ buildId }: { buildId: string }) {
   const { build, events } = feed;
   const buildSessions = sessions ?? [];
   const replySession = buildSessions[0];
-  const conversation = events.filter((event) => event.kind === "devin-user" || event.kind === "devin-message");
   const appUrl = build.appSlug ? `${SHELL_URL}/#/${build.appSlug}` : null;
   const deploymentUrl = build.productionUrl ?? build.deploymentUrl ?? build.vercelUrl;
-  const pipelineStatus =
-    build.status === "live" && build.deploymentStatus && build.deploymentStatus !== "ready"
-      ? build.deploymentStatus === "queued"
-        ? "queued_deploy"
-        : build.deploymentStatus === "error"
-          ? "deploying"
-          : build.deploymentStatus
-      : build.status;
+  const pipelineStatus = pipelineStatusForBuild(build);
   const title = build.prompt.length > 64 ? `${build.prompt.slice(0, 64).trim()}…` : build.prompt;
   const statusLabel = buildStatusLabel(build, pipelineStatus);
   const replySessionState = replySession ? describeSession(replySession, build, true) : null;
@@ -531,6 +721,12 @@ function BuildDetail({ buildId }: { buildId: string }) {
 
   return (
     <section className="build-detail-page">
+      {celebrating ? (
+        <>
+          <BuildFireworks />
+          <span className="sr-only" role="status">Your app is live.</span>
+        </>
+      ) : null}
       <header className="project-header">
         <div className="project-heading">
           <div className="project-breadcrumbs">
@@ -565,7 +761,11 @@ function BuildDetail({ buildId }: { buildId: string }) {
             {replySession.url ? <a className="agent-session-link" href={replySession.url} target="_blank" rel="noreferrer">Open session ↗</a> : null}
           </div>
           {conversation.length > 0 ? (
-            <div className="agent-thread" aria-label="Conversation with Devin">
+            <div
+              className="agent-thread"
+              ref={conversationThread}
+              aria-label="Conversation with Devin"
+            >
               {conversation.map((event, index) => (
                 <div className={`agent-message ${event.kind === "devin-user" ? "from-user" : "from-devin"}`} key={`${event.ts}-${index}`}>
                   <div><strong>{event.kind === "devin-user" ? "You" : "Devin"}</strong><time>{fmtTs(event.ts)}</time></div>
@@ -592,20 +792,39 @@ function BuildDetail({ buildId }: { buildId: string }) {
         </section>
       ) : null}
 
+      <BuildProgressStrip status={pipelineStatus} />
+
       <div className="build-detail-grid">
         <div className="build-preview-column">
           <div className="preview-toolbar">
-            <div>
+            <div className="preview-toolbar-title">
               <span className="preview-live-dot" />
               <strong>{build.status === "live" ? "Live preview" : "Waiting-room preview"}</strong>
             </div>
-            {appUrl ? <a href={appUrl} target="_blank" rel="noreferrer">Open in a new tab ↗</a> : null}
+            <div className="preview-toolbar-actions">
+              <div className="preview-device-switcher" role="group" aria-label="Preview device">
+                {PREVIEW_DEVICES.map((device) => (
+                  <button
+                    type="button"
+                    className={previewDevice === device.id ? "is-active" : ""}
+                    onClick={() => setPreviewDevice(device.id)}
+                    aria-label={device.label}
+                    aria-pressed={previewDevice === device.id}
+                    title={device.label}
+                    key={device.id}
+                  >
+                    <PreviewDeviceIcon device={device.id} />
+                  </button>
+                ))}
+              </div>
+              {appUrl ? <a href={appUrl} target="_blank" rel="noreferrer">Open in a new tab ↗</a> : null}
+            </div>
           </div>
-          <div className="preview-stage">
+          <div className={`preview-stage is-${previewDevice}`}>
             <div className="preview-glow" aria-hidden="true" />
             {appUrl ? (
-              <div className="phone-preview">
-                <div className="phone-speaker" aria-hidden="true" />
+              <div className={`device-preview is-${previewDevice}`}>
+                <div className="device-preview-chrome" aria-hidden="true" />
                 <iframe src={appUrl} title="Generated app preview" allow="fullscreen" />
               </div>
             ) : (
@@ -618,7 +837,7 @@ function BuildDetail({ buildId }: { buildId: string }) {
           <div className="prompt-summary">
             <span className="section-kicker">Original brief</span>
             <p>{build.prompt}</p>
-            {build.styleUrl ? <a href={build.styleUrl} target="_blank" rel="noreferrer">Style reference ↗</a> : null}
+            {build.styleUrl ? <a href={build.styleUrl} target="_blank" rel="noreferrer">Context source ↗</a> : null}
           </div>
         </div>
 
@@ -681,7 +900,9 @@ function BuildDetail({ buildId }: { buildId: string }) {
               <span className="section-kicker">Authorized</span>
               <h2>Build capabilities</h2>
               <div className="build-connector-chips">
-                {build.connectors.map((connector) => <span key={connector}>{connector}</span>)}
+                {build.connectors.map((connector) => (
+                  <span key={connector}>{connectorLabel(connector)}</span>
+                ))}
               </div>
             </section>
           ) : null}

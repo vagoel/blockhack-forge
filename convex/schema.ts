@@ -21,6 +21,7 @@ export default defineSchema({
       )
     ),
     productionUrl: v.optional(v.string()),
+    hiddenAt: v.optional(v.number()),
     createdAt: v.number(),
   }).index("by_slug", ["slug"]),
 
@@ -98,6 +99,7 @@ export default defineSchema({
     appSlug: v.optional(v.string()),
     error: v.optional(v.string()),
     retried: v.optional(v.boolean()),
+    compileRepairAttempts: v.optional(v.number()),
     connectors: v.optional(
       v.array(
         v.union(

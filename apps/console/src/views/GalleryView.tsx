@@ -1,6 +1,7 @@
 import { type CSSProperties, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import QRCode from "react-qr-code";
+import { connectorLabel } from "../connectors";
 import { api, SHELL_URL } from "../convexClient";
 import { useOperatorKey } from "../operator";
 
@@ -13,6 +14,12 @@ type AppRow = {
   prompt: string;
   connectors: string[];
   productionUrl?: string;
+  buildId?: string;
+};
+
+type BuildRow = {
+  _id: string;
+  appId?: string;
 };
 
 function initials(name: string): string {
@@ -38,7 +45,7 @@ function relativeTime(timestamp: number): string {
 export default function GalleryView() {
   const operatorKey = useOperatorKey();
   const apps = useQuery(api.apps.list, { operatorKey }) as AppRow[] | undefined;
-  const stage = useQuery(api.apps.getStage, {}) as string | null | undefined;
+  const builds = useQuery(api.builds.listRecent, { operatorKey }) as BuildRow[] | undefined;
 
   return (
     <section className="projects-page">
@@ -50,18 +57,6 @@ export default function GalleryView() {
         </div>
         <a className="btn btn-primary" href="#/build">New app <span aria-hidden="true">+</span></a>
       </header>
-
-      <div className="stage-banner">
-        <span className="stage-signal" aria-hidden="true"><span /></span>
-        <div>
-          <span className="section-kicker">Live stage</span>
-          <strong>{stage ? stage : "No project is on stage"}</strong>
-        </div>
-        <p>{stage ? "Your stage pointer is ready for the next audience." : "Choose a project below when you are ready to present."}</p>
-        <a className="btn" href={`${SHELL_URL}/#/stage`} target="_blank" rel="noreferrer">
-          Open stage <span aria-hidden="true">↗</span>
-        </a>
-      </div>
 
       {apps === undefined ? (
         <div className="project-grid" aria-label="Loading projects">
@@ -79,9 +74,11 @@ export default function GalleryView() {
           {apps.map((app, index) => (
             <AppCard
               key={app._id}
-              app={app}
+              app={{
+                ...app,
+                buildId: app.buildId ?? builds?.find((build) => build.appId === app._id)?._id,
+              }}
               index={index}
-              isStage={app.slug === stage}
               operatorKey={operatorKey}
             />
           ))}
@@ -94,16 +91,14 @@ export default function GalleryView() {
 function AppCard({
   app,
   index,
-  isStage,
   operatorKey,
 }: {
   app: AppRow;
   index: number;
-  isStage: boolean;
   operatorKey: string;
 }) {
-  const setStage = useMutation(api.apps.setStage);
   const retheme = useAction(api.contextdev.retheme);
+  const removeFromProjects = useMutation(api.apps.removeFromProjects);
 
   const [rethemeUrl, setRethemeUrl] = useState("");
   const [busy, setBusy] = useState(false);
@@ -113,20 +108,6 @@ function AppCard({
   const appUrl = app.productionUrl ?? shellUrl;
   const contextEnabled = app.connectors.includes("context");
   const hue = [252, 166, 28, 204, 330][index % 5];
-
-  async function onSetStage() {
-    if (busy) return;
-    setBusy(true);
-    setNote(null);
-    try {
-      await setStage({ slug: app.slug, operatorKey });
-      setNote({ ok: true, text: "This project is now on stage." });
-    } catch (err) {
-      setNote({ ok: false, text: err instanceof Error ? err.message : String(err) });
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function onRetheme() {
     const url = rethemeUrl.trim();
@@ -145,12 +126,28 @@ function AppCard({
     }
   }
 
+  async function onDelete() {
+    if (busy || !window.confirm(`Remove “${app.name}” from Projects?\n\nThe deployed website will keep working.`)) return;
+    setBusy(true);
+    setNote(null);
+    try {
+      await removeFromProjects({ slug: app.slug, operatorKey });
+    } catch (err) {
+      setNote({ ok: false, text: err instanceof Error ? err.message : String(err) });
+      setBusy(false);
+    }
+  }
+
   return (
     <article
-      className={`project-card${isStage ? " is-on-stage" : ""}`}
+      className="project-card"
       style={{ "--project-hue": hue } as CSSProperties}
     >
-      <div className="project-card-preview">
+      <a
+        className="project-card-preview"
+        href={app.buildId ? `#/build/${app.buildId}` : "#/gallery"}
+        aria-label={`Open build activity for ${app.name}`}
+      >
         <span className="preview-orbit orbit-one" aria-hidden="true" />
         <span className="preview-orbit orbit-two" aria-hidden="true" />
         <div className="project-mini-app">
@@ -159,8 +156,7 @@ function AppCard({
           <small>{app.status === "live" ? "Ready to join" : "Building now"}</small>
           <i aria-hidden="true" />
         </div>
-        {isStage ? <span className="on-stage-pill"><span /> On stage</span> : null}
-      </div>
+      </a>
 
       <div className="project-card-body">
         <div className="project-card-title">
@@ -174,7 +170,7 @@ function AppCard({
         <code className="project-slug">/{app.slug}</code>
         <div className="project-tech" aria-label="Enabled connectors">
           {app.connectors.map((connector) => (
-            <span key={connector}><i aria-hidden="true" />{connector}</span>
+            <span key={connector}><i aria-hidden="true" />{connectorLabel(connector)}</span>
           ))}
           {app.productionUrl ? <span className="production-ready"><i aria-hidden="true" />Production live</span> : null}
         </div>
@@ -184,8 +180,8 @@ function AppCard({
             Open app <span aria-hidden="true">↗</span>
           </a>
           <a className="btn" href={`#/projector/${app.slug}`}>Present</a>
-          <button className="btn btn-icon" type="button" onClick={onSetStage} disabled={busy || isStage} title="Set this project on stage">
-            {isStage ? "✓" : "●"}
+          <button className="btn btn-danger" type="button" onClick={onDelete} disabled={busy}>
+            Delete
           </button>
         </div>
 

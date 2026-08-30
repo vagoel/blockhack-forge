@@ -1,8 +1,9 @@
 import { v } from "convex/values";
-import { action, internalMutation, internalQuery, query } from "./_generated/server";
+import { action, internalAction, internalMutation, internalQuery, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requireOperator } from "./lib/operator";
 import { sourceFingerprint } from "./lib/sourceFingerprint";
+import { compileRepairPrompt } from "./lib/compileRepair";
 import {
   devinModeValidator,
   normalizeDevinMode,
@@ -413,6 +414,77 @@ export const reply = action({
       kind: "devin-user",
       message: message.slice(0, 2_000),
     });
+    return null;
+  },
+});
+
+export const repairCompile = internalAction({
+  args: {
+    sessionDocId: v.id("devinSessions"),
+    error: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const session = await ctx.runQuery(internal.devin.getSession, { id: args.sessionDocId });
+    if (!session) return null;
+    const message = compileRepairPrompt(args.error);
+
+    try {
+      const apiVersion = sessionApiVersion(session);
+      const key = devinKeyFor(apiVersion);
+      let url: string;
+      if (apiVersion === "v3") {
+        if (!session.orgId) throw new Error("Devin v3 session is missing its organization ID");
+        url = `https://api.devin.ai/v3/organizations/${encodeURIComponent(session.orgId)}/sessions/${encodeURIComponent(session.devinSessionId)}/messages`;
+      } else {
+        url = `https://api.devin.ai/v1/sessions/${encodeURIComponent(session.devinSessionId)}/message`;
+      }
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+      const responseText = await res.text();
+      if (!res.ok) {
+        throw new Error(`Devin ${apiVersion} correction failed: ${res.status} ${responseText.slice(0, 200)}`.trim());
+      }
+      let responseBody: any = null;
+      if (responseText.trim()) {
+        try {
+          responseBody = JSON.parse(responseText);
+        } catch {
+          // The legacy endpoint commonly returns an empty or non-JSON body.
+        }
+      }
+      await ctx.runMutation(internal.devin.resumeAfterReply, {
+        id: session._id,
+        status:
+          apiVersion === "v3" && typeof responseBody?.status === "string"
+            ? responseBody.status
+            : apiVersion === "v3"
+              ? "resuming"
+              : "resume_requested",
+        acus:
+          apiVersion === "v3" && typeof responseBody?.acus_consumed === "number"
+            ? responseBody.acus_consumed
+            : undefined,
+        url:
+          apiVersion === "v3" && typeof responseBody?.url === "string"
+            ? responseBody.url
+            : undefined,
+      });
+      await ctx.runMutation(internal.builds.logEvent, {
+        buildId: session.buildId,
+        kind: "compile",
+        message: "Devin correction pass started",
+      });
+    } catch (error) {
+      await ctx.runMutation(internal.builds.compileRepairFailed, {
+        buildId: session.buildId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
     return null;
   },
 });

@@ -58,8 +58,11 @@ export default function ConnectorRail({ selected, readiness, onToggle }: Connect
                   <small>Enabled for this build</small>
                 ) : null}
               </span>
-              <span className="switch-control" aria-hidden="true">
-                <span />
+              <span className="connector-switch" aria-hidden="true">
+                <small>{enabled ? "On" : "Off"}</small>
+                <span className="switch-control">
+                  <span />
+                </span>
               </span>
             </button>
           );

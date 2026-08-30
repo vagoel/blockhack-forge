@@ -15,6 +15,7 @@ import {
   devinModeValidator,
   normalizeDevinMode,
 } from "./lib/devinMode";
+import { shouldAutomaticallyRepairCompile } from "./lib/compileRepair";
 
 declare const process: { env: Record<string, string | undefined> };
 
@@ -73,7 +74,7 @@ function requireConnectorConfiguration(connectors: readonly ConnectorId[]): void
     connectors.includes("openai") &&
     !envPresent(process.env.OPENAI_API_KEY, process.env.OPENAI_KEY)
   ) {
-    throw new Error("OpenAI is selected but its credential is not configured");
+    throw new Error("Intelligence is selected but its credential is not configured");
   }
   if (
     connectors.includes("vercel") &&
@@ -247,6 +248,7 @@ export const submitCompiled = mutation({
         status: "live",
         appId: version.appId,
         appSlug: app.slug,
+        compileRepairAttempts: 0,
       });
       await ctx.db.insert("buildEvents", {
         buildId: version.buildId,
@@ -274,6 +276,36 @@ export const compileFailed = mutation({
     if (version.status === "live" || version.status === "error") return null;
     await ctx.db.patch(version._id, { status: "error" });
     const app = await ctx.db.get(version.appId);
+    const build = version.buildId ? await ctx.db.get(version.buildId) : null;
+    const canRepair = shouldAutomaticallyRepairCompile(
+      build?.compileRepairAttempts,
+      Boolean(version.devinSessionDocId),
+    );
+
+    if (build && version.buildId && version.devinSessionDocId && canRepair) {
+      await ctx.db.patch(build._id, {
+        status: "generating",
+        error: undefined,
+        compileRepairAttempts: (build.compileRepairAttempts ?? 0) + 1,
+      });
+      if (app) {
+        await ctx.db.patch(app._id, {
+          status: app.currentVersionId ? "live" : "generating",
+        });
+      }
+      await ctx.db.insert("buildEvents", {
+        buildId: build._id,
+        ts: Date.now(),
+        kind: "compile",
+        message: "compile preflight found a source-contract issue — Devin is correcting it automatically",
+      });
+      await ctx.scheduler.runAfter(0, internal.devin.repairCompile, {
+        sessionDocId: version.devinSessionDocId,
+        error: args.error.slice(0, 1_200),
+      });
+      return null;
+    }
+
     if (app && app.status === "awaiting_compile") {
       await ctx.db.patch(app._id, { status: "error" });
     }
@@ -287,6 +319,28 @@ export const compileFailed = mutation({
         message,
       });
     }
+    return null;
+  },
+});
+
+export const compileRepairFailed = internalMutation({
+  args: { buildId: v.id("builds"), error: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const build = await ctx.db.get(args.buildId);
+    if (!build) return null;
+    const message = `Automatic compile correction failed: ${args.error.slice(0, 400)}`;
+    await ctx.db.patch(build._id, { status: "error", error: message });
+    if (build.appId) {
+      const app = await ctx.db.get(build.appId);
+      if (app && !app.currentVersionId) await ctx.db.patch(app._id, { status: "error" });
+    }
+    await ctx.db.insert("buildEvents", {
+      buildId: build._id,
+      ts: Date.now(),
+      kind: "error",
+      message,
+    });
     return null;
   },
 });
@@ -358,6 +412,7 @@ export const patch = internalMutation({
     retried: v.optional(v.boolean()),
     deploymentStatus: v.optional(v.string()),
     productionUrl: v.optional(v.string()),
+    styleUrl: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {

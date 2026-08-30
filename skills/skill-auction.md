@@ -17,17 +17,16 @@ try to beat it simultaneously.
 
 A client-side check ("is my bid > current high?") is a read-then-write race: two phones
 both see $50, both bid $55, both "succeed", and the history is corrupt. The server-side
-guard `monotonicMaxField` makes `pushItem` atomically reject any bid whose field is not
+guard `monotonicMaxField` makes `rt.push` atomically reject any bid whose field is not
 STRICTLY greater than the current max in the collection. Equal bids lose. The client's
 only job is to try, and to handle losing politely.
 
 ## Data model recipe
 
-- `bids` — append-only items `{amount: number, name: string}` with guard
-  `monotonicMaxField: "amount"`. The current high bid is the LAST item
-  (`bids.at(-1)`) — `useList` is newest-last and every accepted push is a new
-  max by construction.
-- `meta` — docs: `"item"` (what's being auctioned, set by host or hardcoded),
+- `bids` — append-only items `{round, amount, guardValue, name}` with guard
+  `monotonicMaxField: "guardValue"`. Filter to the current round; its high bid is the
+  LAST filtered item because `useList` is newest-last.
+- `meta` — docs: `"auction"` (numeric round), `"item"` (what is being auctioned), and
   `"starter"` (claim-elected timer starter).
 - Timer `"auction"` via `rt.startTimer` / `useTimer` — the close.
 
@@ -35,10 +34,24 @@ only job is to try, and to handle losing politely.
 
 ```json
 {
-  "bids": { "monotonicMaxField": "amount", "rateLimitPerMin": 60, "maxItems": 1000 },
+  "bids": { "monotonicMaxField": "guardValue", "rateLimitPerMin": 60, "maxItems": 1000 },
   "meta": { "rateLimitPerMin": 10 }
 }
 ```
+
+## Admin reset without deleting history
+
+The required admin view needs a real `Reset auction` / `New auction` action. Because the
+bid list and its monotonic guard are append-only, model rounds explicitly:
+
+- Subscribe to `meta/auction` as `{round?: number}`; current round defaults to `0`.
+- Each bid stores `{round, amount, name, guardValue}` and the collection guard is
+  `monotonicMaxField: "guardValue"`. Use
+  `guardValue = round * 1_000_000_000 + amount`, reject amounts outside `1..999_999_999`,
+  and display/compare only `amount` among bids for the current round.
+- Admin reset calls `rt.increment("meta", "auction", "round", 1)`, restarts the timer,
+  and shows confirmation. All clients filter history by the new round reactively. Never
+  claim the old bid items were deleted.
 
 ## Interaction patterns
 
@@ -49,9 +62,11 @@ only job is to try, and to handle losing politely.
   the game.
 - **Close**: the first player to open the auction wins `claim("meta", "starter")` and
   calls `rt.startTimer("auction", ms)`. When `fired` flips true, disable bidding and
-  crown `bids.at(-1)`. `fired` is the shared authoritative close — never close
-  locally on `remainingMs === 0` alone (clocks drift; `remainingMs` is display).
-- **Bid history** newest-first (`bids.slice().reverse()`), capped display (~15 rows).
+  crown the last bid filtered to the current round. `fired` is the shared authoritative
+  close — never close locally on `remainingMs === 0` alone (clocks drift;
+  `remainingMs` is display).
+- **Bid history** filters to the current round, then renders newest-first, capped to
+  roughly 15 rows.
 
 ## Pitfalls
 
@@ -76,7 +91,7 @@ only job is to try, and to handle losing politely.
   "description": "Live auction — highest bid when the timer fires wins.",
   "projector": true,
   "collections": {
-    "bids": { "monotonicMaxField": "amount", "rateLimitPerMin": 60, "maxItems": 1000 },
+    "bids": { "monotonicMaxField": "guardValue", "rateLimitPerMin": 60, "maxItems": 1000 },
     "meta": { "rateLimitPerMin": 10 }
   }
 }
@@ -99,13 +114,21 @@ export default function App() {
   const rt = Runtime.useRt();
   const mode = Runtime.useMode();
   const bids = Runtime.useList("bids"); // oldest first, newest LAST
+  const auctionMeta = Runtime.useDoc("meta", "auction") as { round?: number } | null;
   const timer = Runtime.useTimer("auction");
   const presence = Runtime.usePresence();
   const [custom, setCustom] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [adminView, setAdminView] = useState(false);
+  const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
 
-  const high = bids.at(-1) ?? null;
+  const round = Number(auctionMeta?.round ?? 0);
+  const currentBids = bids.filter((entry) => Number(entry.data?.round ?? 0) === round);
+  const high = currentBids.at(-1) ?? null;
   const highAmount = Number(high?.data?.amount ?? 0);
   const open = timer.endsAt !== null && !timer.fired;
   const closed = timer.fired;
@@ -119,21 +142,53 @@ export default function App() {
   };
 
   const bid = async (amount: number) => {
-    if (!open || !Number.isFinite(amount) || amount <= 0) return;
+    if (!open || !Number.isFinite(amount) || amount <= 0 || amount >= 1_000_000_000) return;
+    const rounded = Math.round(amount);
     setBusy(true);
-    const res = await rt.push("bids", { amount: Math.round(amount), name: me.name });
+    const res = await rt.push("bids", {
+      round, amount: rounded, guardValue: round * 1_000_000_000 + rounded, name: me.name,
+    });
     setNotice(res.ok ? null : "Outbid — someone got there first!");
     if (res.ok) setCustom("");
     setBusy(false);
   };
 
   const base = Math.max(highAmount, MIN_BID - 1);
-  const history = bids.slice().reverse().slice(0, 15).map((b) => (
+  const history = currentBids.slice().reverse().slice(0, 15).map((b) => (
     <div key={b._id} style={{ display: "flex", justifyContent: "space-between", minHeight: 44, alignItems: "center" }}>
       <span>{b.data?.name ?? "Guest"}</span>
       <strong>${b.data?.amount}</strong>
     </div>
   ));
+
+  const unlockAdmin = () => {
+    if (adminPassword === "123") {
+      setAdminUnlocked(true);
+      setAdminError(null);
+      setAdminPassword("");
+    } else {
+      setAdminError("That password is not correct.");
+    }
+  };
+
+  const resetAuction = async () => {
+    if (!confirmReset) {
+      setConfirmReset(true);
+      return;
+    }
+    setBusy(true);
+    try {
+      const nextRound = await rt.increment("meta", "auction", "round", 1);
+      await rt.startTimer("auction", AUCTION_MS);
+      setNotice(`Auction reset — round ${nextRound} is live.`);
+      setConfirmReset(false);
+      setAdminView(false);
+    } catch {
+      setAdminError("Reset failed. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const status = (
     <>
@@ -154,6 +209,31 @@ export default function App() {
       <Screen title="Golden Gavel — Mystery Prize">
         {status}
         {history.length === 0 ? <EmptyState message="No bids yet…" /> : <List items={history} />}
+      </Screen>
+    );
+  }
+
+  if (adminView) {
+    return (
+      <Screen title="Auction admin">
+        {!adminUnlocked ? (
+          <Card title="Enter admin password">
+            <Input value={adminPassword} onChange={setAdminPassword} placeholder="Password" type="password" />
+            {adminError && <p style={{ color: "var(--rt-accent)" }}>{adminError}</p>}
+            <BigButton onClick={unlockAdmin}>Unlock admin</BigButton>
+            <BigButton variant="secondary" onClick={() => setAdminView(false)}>Back to auction</BigButton>
+          </Card>
+        ) : (
+          <Card title="Auction controls">
+            <p>Current round: {round + 1}. Reset starts a clean two-minute round for everyone.</p>
+            <BigButton variant="danger" onClick={() => void resetAuction()} disabled={busy}>
+              {confirmReset ? "Confirm reset auction" : "Reset auction"}
+            </BigButton>
+            <BigButton variant="secondary" onClick={() => { setAdminUnlocked(false); setAdminView(false); }}>
+              Lock and return
+            </BigButton>
+          </Card>
+        )}
       </Screen>
     );
   }
@@ -189,6 +269,7 @@ export default function App() {
         </Card>
       )}
       {history.length > 0 && <Card title="Bid history"><List items={history} /></Card>}
+      <BigButton variant="secondary" onClick={() => setAdminView(true)}>Admin</BigButton>
     </Screen>
   );
 }
