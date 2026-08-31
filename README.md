@@ -6,7 +6,8 @@
 **Demo:** https://blockhack-forge-console.vercel.app  
 **Deck:** https://blockhack-forge-console.vercel.app/presentation  
 **Video demo:** https://www.loom.com/share/828e83d3a32444f9baf2a6429994b6d5  
-**Hackathon:** https://collabute-hackathon.vercel.app/#resources
+**Hackathon:** https://collabute-hackathon.vercel.app/#resources  
+**Event:** https://luma.com/theblock-2ej8?tk=q6IHX1
 
 ## Problem
 An idea dies waiting for a team to build it. A live, multi-user app needs a backend, a database, realtime sync, design, and a deployment pipeline — five or more tools and days of wiring. By the time it ships, the moment is gone, and people without code never ship at all.
